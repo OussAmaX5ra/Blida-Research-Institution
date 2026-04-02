@@ -1,0 +1,23 @@
+{
+  "name": "research-lab-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend API for the Blida Research Lab platform",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "check-env": "node src/config/check-env.js",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "mongoose": "^8.18.0",
+    "cors": "^2.8.5",
+    "zod": "^3.25.76"
+  }
+}
+

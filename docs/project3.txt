@@ -1,0 +1,92 @@
+Project 3: Academic Research Lab Institutional Site
+
+Main Focus: Create new Research Teams and Publications:
+
+   A. Research Teams (The "Units"): This feature allows the laboratory to organize its
+      members into specific scientific divisions.
+
+   •   Team Identity: A unique name for the research group and its core mission or
+       "Research Focus".
+
+   •   Leadership: The name of the Professor or Senior Researcher leading the team.
+
+   •   Member List: A multi-select or list area to add Professors, Doctors, and PhD
+       students belonging to that unit.
+
+   •   Active Projects: A field to list current scientific projects the team is
+       investigating.
+
+   B. Publications (The "Scientific Output"): This is a functional database where the
+      lab tracks its scholarly contributions to journals and conferences.
+
+   •   Document Info: The title of the research paper and the full list of contributing
+       authors.
+
+   •   Publisher Details: The name of the Journal or Conference where the work was
+       presented and the year of publication.
+
+   •   Access Link: A URL (PDF_Link) pointing to the digital version of the paper for
+       visitors to read.
+
+   •   Categorization: A tag system to link the publication to a specific Research Team
+       or scientific theme.
+
+1. Updated Mind Map (Conception)
+
+   •   Laboratory Identity: Mission, vision, and core research axes.
+
+   •   Teams & Members: Hierarchical view of Research Teams, Faculty, and PhD
+       students.
+
+   •   Management Portal : A restricted or specialized area where an admin can add a
+       new Research Team to the lab, or a new publication to a team.
+
+   •   Research Output: Digital library of projects and publications.
+
+   •   News & Gallery: Live feed of lab news and media library.
+
+2. Updated Functional Requirements (The MERN Way)
+
+   •   Database (MongoDB):
+          o   Team Collection: Updated fields to include TeamName, LeaderName,
+              ResearchFocus, and an array for TeamMembers (Professors, Doctors, and
+              PhD Students).
+
+          o   Publication Collection: Title, Authors, Year, Publisher, and PDF_Link.
+
+          o   News Collection: Headline, Date, Image, and FullStory.
+
+   •   Backend (Node/Express):
+
+          o   POST /api/teams (New): A route to receive team data from the frontend
+              and save it to MongoDB.
+
+          o   Search API: /api/publications/search?query=AI for specific research
+              papers.
+
+          o   Member API: Fetch members grouped by their Research Team.
+
+   •   Frontend (React):
+
+          o   Team Creation Form (New): A dedicated page or modal with input fields
+              for the new team's name, leader, and focus area (The same for a new
+              publication).
+
+          o   Search Bar: Dynamic search component for filtering publications.
+
+          o   Team Grid: Responsive layout showing team cards with "Click to see all
+              members" functionality.
+
+3. Non-Functional & Innovative Requirements
+
+   •   Modern UI: High-performance and Responsive design (mobile-first) for the
+       gallery and publication list.
+
+   •   Innovation (The "Pro" Touch):
+
+          o   Citation Exporter: A button on each publication card generating BibTeX or
+              APA citations.
+
+          o   PhD Progress Tracker: A visual timeline showing the status of ongoing
+              research projects.
+

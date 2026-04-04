@@ -16,7 +16,7 @@ Establish the product definition, technical direction, data structure, backend f
 ### Tasks
 
 - `[x]` Finalize the PRD
-- `[x]` Define the public website information architecture
+- `[x]` Define the public website information architecture in implementation detail
 - `[x]` Define the admin portal information architecture in implementation detail
 - `[x]` Define the database schemas for `users`, `teams`, `members`, `projects`, `publications`, `news`, `gallery`, `phd_progress`, and `activity_logs`
 - `[x]` Define entity relationships and data ownership rules
@@ -81,7 +81,6 @@ Create a secure management portal that allows authenticated admins to manage all
 
 ### Tasks
 
-- `[ ]` Define the admin route map and dashboard information architecture
 - `[ ]` Build the admin shell layout with sidebar, header, and protected navigation
 - `[ ]` Build the admin dashboard overview
 - `[ ]` Build the Teams management list view

@@ -40,14 +40,16 @@ The public website should be organized around a simple top-level information arc
 4. Research Teams
 5. Team Details
 6. Members Directory
-7. Projects
-8. Publications
-9. Publication Details
-10. News
-11. News Details
-12. Gallery
-13. Contact
-14. Admin Login
+7. Member Details
+8. Projects
+9. Project Details
+10. Publications
+11. Publication Details
+12. News
+13. News Details
+14. Gallery
+15. Contact
+16. Admin Login
 
 ## Navigation Model
 
@@ -67,6 +69,8 @@ The public website should be organized around a simple top-level information arc
 ### Secondary Navigation
 
 - Team details breadcrumbs
+- Member details breadcrumbs
+- Project details breadcrumbs
 - Publication details breadcrumbs
 - News details breadcrumbs
 - Contextual filters on listing pages
@@ -90,14 +94,18 @@ The public website should be organized around a simple top-level information arc
 - `/teams`
 - `/teams/:slug`
 - `/members`
+- `/members/:slug`
 - `/projects`
+- `/projects/:slug`
 - `/publications`
 - `/publications/:slug`
 - `/news`
 - `/news/:slug`
 - `/gallery`
 - `/contact`
-- `/login`
+- `/admin/login`
+
+The public website should not expose admin entry through a generic `/login` route. Using `/admin/login` keeps the admin boundary visually and structurally separate from the academic browsing experience.
 
 ## Layout System
 
@@ -136,6 +144,8 @@ The public website should use a consistent shell built from:
 - Clear grouping of focus areas
 - Links to related teams, members, projects, or publications where relevant
 
+For the first implementation, research axes should be treated as a curated institutional page at `/research-axes` rather than a dynamic entity with its own slug route. If axes later become database-managed records, the route model can expand to `/research-axes/:slug`.
+
 ### Research Teams Listing
 
 - Team cards in a responsive grid or list
@@ -164,12 +174,32 @@ The public website should use a consistent shell built from:
 - Filter by research theme when data supports it
 - Member cards with core profile information and team associations
 
+### Member Details
+
+- Full profile summary
+- Role and academic title
+- Team memberships
+- Research interests
+- Related projects
+- Related publications
+- Optional PhD progress reference when applicable
+
 ### Projects
 
 - Project listing with summary cards or rows
 - Filters by team, status, theme, and year
 - Visibility of lead member and related team
 - Optional links into related PhD progress context when applicable
+
+### Project Details
+
+- Project identity and summary
+- Team and lead member context
+- Status and timeline
+- Milestones
+- Related members
+- Related publications
+- Optional related PhD progress links
 
 ### Publications
 
@@ -207,6 +237,8 @@ The public website should use a consistent shell built from:
 - Category grouping or filters when useful
 - Media thumbnails with captions and dates
 - Future-friendly support for team- or project-linked media
+- Use pagination, load-more, or infinite-scroll behavior intentionally rather than rendering the full media library at once
+- The first implementation should prefer paginated or load-more fetching so large galleries remain performant and mobile-friendly
 
 ### Contact
 
@@ -233,6 +265,12 @@ The public website should reuse a small set of predictable page types:
 
 - Present canonical entity content using clean slugs and relationship-driven sections
 
+### Not Found and Error States
+
+- Unknown public routes should render a styled site-wide `404` page rather than a blank or broken screen
+- Missing entity slugs such as `/publications/nonexistent-slug` should render a contextual not-found state inside the public shell
+- Data-loading failures should show resilient error states with retry guidance where appropriate
+
 ### Institutional Pages
 
 - Present curated narrative content with strong visual hierarchy and clear calls to action
@@ -251,6 +289,7 @@ The public website should reuse a small set of predictable page types:
 - Page titles and metadata should reflect the primary entity or page purpose
 - Listing pages should support crawlable, descriptive paths
 - Breadcrumbs should be used on detail pages where they improve orientation
+- Admin entry should remain outside the public academic route language through `/admin/login`
 
 ## Data Requirements by Route
 

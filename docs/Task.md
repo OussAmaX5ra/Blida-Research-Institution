@@ -24,17 +24,17 @@ Establish the product definition, technical direction, data structure, backend f
 - `[x]` Decide the final repository structure (`client/`, `server/`, optional `shared/`)
 - `[x]` Set up the backend folder and environment configuration
 - `[x]` Configure MongoDB connection and base server bootstrap
-- `[ ]` Set up centralized backend error handling
-- `[ ]` Set up validation strategy for requests and payloads
-- `[ ]` Design authentication flow for admin users
-- `[ ]` Implement password hashing and secure login flow
-- `[ ]` Implement RBAC middleware for `Super Admin`, `Content Admin`, and future `Editor`
-- `[ ]` Protect admin routes and sensitive API endpoints
-- `[ ]` Add rate limiting, secure headers, and base security middleware
+- `[x]` Set up centralized backend error handling
+- `[x]` Set up validation strategy for requests and payloads
+- `[x]` Design authentication flow for admin users
+- `[x]` Implement password hashing and secure login flow
+- `[x]` Implement RBAC middleware for `Super Admin`, `Content Admin`, and future `Editor`
+- `[x]` Protect admin routes and sensitive API endpoints
+- `[x]` Add rate limiting, secure headers, and base security middleware
 
 ### Milestone Status
 
-- `[ ]` Milestone 1 complete
+- `[x]` Milestone 1 complete
 
 ## Milestone 2: Core Public Experience
 

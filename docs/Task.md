@@ -44,15 +44,15 @@ Deliver the public-facing institutional website with real content structure, pol
 
 ### Tasks
 
-- `[ ]` Define the public route map and page hierarchy
-- `[ ]` Define the global layout, header, footer, and navigation system
-- `[ ]` Define the visual design system using Tailwind CSS 4
-- `[ ]` Use the `frontend-design` skill for high-quality public UI direction
-- `[ ]` Build the Home page
-- `[ ]` Build the About the Lab page
-- `[ ]` Build the Research Axes page
-- `[ ]` Build the Research Teams listing page
-- `[ ]` Build the Team Details page
+- `[x]` Define the public route map and page hierarchy
+- `[x]` Define the global layout, header, footer, and navigation system
+- `[x]` Define the visual design system using Tailwind CSS 4
+- `[x]` Use the `frontend-design` skill for high-quality public UI direction
+- `[x]` Build the Home page
+- `[x]` Build the About the Lab page
+- `[x]` Build the Research Axes page
+- `[x]` Build the Research Teams listing page
+- `[x]` Build the Team Details page
 - `[ ]` Build the Members Directory page
 - `[ ]` Build the Projects page
 - `[ ]` Build the Publications page

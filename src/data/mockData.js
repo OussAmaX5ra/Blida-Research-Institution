@@ -1,6 +1,6 @@
 export const labInfo = {
-  name: "NEXUS Research Laboratory",
-  acronym: "NRL",
+  name: "Blida Institution Research Laboratory",
+  acronym: " BIRL",
   mission: "Pioneering the frontiers of intelligent systems, bioinformatics, and human-computer interaction through rigorous interdisciplinary research.",
   vision: "A world where science and technology converge to solve humanity's most complex challenges.",
   founded: 2009,
@@ -13,13 +13,73 @@ export const labInfo = {
   ],
 };
 
+export const researchAxes = [
+  {
+    id: "artificial-intelligence",
+    name: "Artificial Intelligence",
+    shortLabel: "AI",
+    accent: "#1a5c6b",
+    summary:
+      "Designing learning systems that can reason over complex signals, adapt to changing environments, and remain interpretable enough for high-stakes scientific and societal use.",
+    position:
+      "This axis frames the lab's work on machine learning foundations, autonomous decision systems, and explainability practices that make advanced models more trustworthy.",
+    methods: ["Temporal graph learning", "AutoML pipelines", "Explainability metrics"],
+    outcomes: ["Adaptive decision systems", "Transparent model evaluation", "Scientific forecasting tools"],
+    teamAcronyms: ["ISAI"],
+  },
+  {
+    id: "bioinformatics",
+    name: "Bioinformatics",
+    shortLabel: "BIO",
+    accent: "#7c4d8a",
+    summary:
+      "Turning high-dimensional biological data into usable insight through sequence modeling, genomic analysis, and predictive computational pipelines.",
+    position:
+      "This axis connects computational science with molecular discovery, helping researchers interpret rare disease mechanisms, protein structure behavior, and large-scale omics signals.",
+    methods: ["Contrastive embeddings", "Genome data mining", "Protein structure prediction"],
+    outcomes: ["Therapeutic discovery support", "Rare disease analysis", "Scalable biological inference"],
+    teamAcronyms: ["BIG"],
+  },
+  {
+    id: "human-computer-interaction",
+    name: "Human-Computer Interaction",
+    shortLabel: "HCI",
+    accent: "#b85c38",
+    summary:
+      "Studying how people perceive, navigate, and trust digital systems while building interfaces that respond to cognition, accessibility, and context.",
+    position:
+      "This axis keeps the lab's research grounded in human use, ensuring technical systems remain legible, inclusive, and effective in real environments.",
+    methods: ["Cognitive load sensing", "Adaptive interface design", "Accessible interaction pipelines"],
+    outcomes: ["Inclusive digital experiences", "Human-centered experimentation", "Assistive interaction systems"],
+    teamAcronyms: ["HCI"],
+  },
+  {
+    id: "distributed-systems",
+    name: "Distributed Systems",
+    shortLabel: "SYS",
+    accent: "#2d6a4f",
+    summary:
+      "Engineering resilient compute infrastructures that can coordinate learning, inference, and data exchange across edge, cloud, and collaborative environments.",
+    position:
+      "This axis provides the systems backbone for scalable research deployment, privacy-aware learning, and fault-tolerant experimentation beyond a single machine or lab setting.",
+    methods: ["Federated protocols", "Edge inference runtimes", "Consensus and reliability testing"],
+    outcomes: ["Scalable deployment", "Privacy-preserving collaboration", "Fault-tolerant research platforms"],
+    teamAcronyms: ["DEC"],
+  },
+];
+
 export const teams = [
   {
     id: 1,
+    slug: "intelligent-systems-ai",
+    axisId: "artificial-intelligence",
     name: "Intelligent Systems & AI",
     acronym: "ISAI",
     leader: "Prof. Sarah Chen",
+    summary:
+      "The ISAI team develops machine learning systems that can model complex environments, support autonomous decision-making, and remain transparent enough for scientific and institutional trust.",
     focus: "Machine learning, deep neural architectures, and reinforcement learning for autonomous decision-making systems.",
+    themes: ["Machine Learning", "Graph Intelligence", "Explainable AI", "Autonomous Systems"],
     color: "#1a5c6b",
     members: [
       { name: "Prof. Sarah Chen", role: "Professor", avatar: "SC" },
@@ -34,10 +94,15 @@ export const teams = [
   },
   {
     id: 2,
+    slug: "bioinformatics-genomics",
+    axisId: "bioinformatics",
     name: "Bioinformatics & Genomics",
     acronym: "BIG",
     leader: "Prof. James Okafor",
+    summary:
+      "The BIG team translates genomic and protein-scale data into computational insight, supporting discovery workflows that connect biological complexity with robust predictive modeling.",
     focus: "Computational analysis of biological sequences, protein folding prediction, and genomic data mining.",
+    themes: ["Genomics", "Protein Modeling", "Sequence Analysis", "Computational Biology"],
     color: "#7c4d8a",
     members: [
       { name: "Prof. James Okafor", role: "Professor", avatar: "JO" },
@@ -50,10 +115,15 @@ export const teams = [
   },
   {
     id: 3,
+    slug: "human-computer-interaction",
+    axisId: "human-computer-interaction",
     name: "Human-Computer Interaction",
     acronym: "HCI",
     leader: "Prof. Marie Dupont",
+    summary:
+      "The HCI team studies how people interact with adaptive systems and designs accessible interfaces that respond to cognition, context, and real-world user diversity.",
     focus: "Designing adaptive interfaces, studying cognitive load, and building accessible technologies for diverse users.",
+    themes: ["Accessibility", "Adaptive Interfaces", "Cognitive Load", "Assistive Interaction"],
     color: "#b85c38",
     members: [
       { name: "Prof. Marie Dupont", role: "Professor", avatar: "MD" },
@@ -67,10 +137,15 @@ export const teams = [
   },
   {
     id: 4,
+    slug: "distributed-edge-computing",
+    axisId: "distributed-systems",
     name: "Distributed & Edge Computing",
     acronym: "DEC",
     leader: "Prof. Carlos Rivera",
+    summary:
+      "The DEC team engineers distributed infrastructures for reliable large-scale learning and inference, with special attention to edge deployment, privacy, and fault tolerance.",
     focus: "Scalable distributed architectures, edge AI deployment, and fault-tolerant consensus protocols.",
+    themes: ["Distributed Architectures", "Edge AI", "Federated Learning", "Fault Tolerance"],
     color: "#2d6a4f",
     members: [
       { name: "Prof. Carlos Rivera", role: "Professor", avatar: "CR" },
@@ -158,6 +233,7 @@ export const news = [
     headline: "NRL wins Best Paper Award at NeurIPS 2024",
     date: "December 12, 2024",
     category: "Award",
+    teamTags: ["ISAI"],
     image: "https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80",
     excerpt: "The ISAI team's paper on Transformers for Temporal Graph Learning received the prestigious Best Paper Award, recognizing its outstanding contribution to the field.",
   },
@@ -166,6 +242,7 @@ export const news = [
     headline: "€2.4M Horizon Europe Grant Awarded to BIG Team",
     date: "November 3, 2024",
     category: "Funding",
+    teamTags: ["BIG"],
     image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&q=80",
     excerpt: "The Bioinformatics & Genomics team secures a landmark European research grant to advance protein structure prediction for rare disease therapies.",
   },
@@ -174,6 +251,7 @@ export const news = [
     headline: "Lab Opens New Collaboration with MIT Media Lab",
     date: "October 18, 2024",
     category: "Partnership",
+    teamTags: ["HCI"],
     image: "https://images.unsplash.com/photo-1564325724739-bae0bd08762c?w=600&q=80",
     excerpt: "NEXUS and MIT Media Lab formalize a joint research initiative focused on accessible computing interfaces for neurodiverse populations.",
   },
@@ -182,6 +260,7 @@ export const news = [
     headline: "PhD Defense: Rami Hassan Earns Doctorate with Honours",
     date: "September 29, 2024",
     category: "Milestone",
+    teamTags: ["ISAI"],
     image: "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=600&q=80",
     excerpt: "Rami Hassan successfully defended his dissertation on reinforcement learning for autonomous robotics, receiving honours from the evaluation committee.",
   },

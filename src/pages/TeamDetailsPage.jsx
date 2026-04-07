@@ -10,7 +10,9 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { news, publications, researchAxes, teams } from '../data/mockData';
+import { researchAxes } from '../data/mockData';
+import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { usePublicData } from '../providers/PublicDataProvider.jsx';
 
 const roleOrder = ['Professor', 'Doctor', 'PhD Student'];
 
@@ -22,7 +24,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
           {eyebrow}
         </p>
         <h2
-          className="text-4xl font-bold leading-tight md:text-5xl"
+          className="page-section-title font-bold"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -144,6 +146,35 @@ function MemberGroup({ title, members, accent }) {
 }
 
 export default function TeamDetailsPage({ slug, onNavigate }) {
+  const {
+    collections: { members, news, projects, publications, teams },
+    error,
+    hasLoaded,
+    isLoading,
+    retry,
+  } = usePublicData();
+
+  if (!hasLoaded && isLoading) {
+    return (
+      <PublicPageLoading
+        eyebrow="Team Details"
+        title="Loading the team profile."
+        description="The page is fetching the live team record together with its members, projects, publications, and related news."
+      />
+    );
+  }
+
+  if (!hasLoaded && error) {
+    return (
+      <PublicPageError
+        title="The team profile could not load."
+        description="This route needs the public API to return the team record before the detail page can render."
+        error={error}
+        onRetry={retry}
+      />
+    );
+  }
+
   const team = teams.find((entry) => entry.slug === slug);
 
   if (!team) {
@@ -151,11 +182,13 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
   }
 
   const relatedAxis = researchAxes.find((axis) => axis.id === team.axisId);
-  const relatedPublications = publications.filter((publication) => publication.teamTag === team.acronym);
-  const relatedNews = news.filter((item) => item.teamTags?.includes(team.acronym));
+  const relatedMembers = members.filter((member) => member.team.slug === team.slug);
+  const relatedProjects = projects.filter((project) => project.team?.slug === team.slug);
+  const relatedPublications = publications.filter((publication) => publication.team?.acronym === team.acronym);
+  const relatedNews = news.filter((item) => (item.teams ?? []).some((entry) => entry.acronym === team.acronym));
   const groupedMembers = roleOrder.map((role) => ({
     role,
-    members: team.members.filter((member) => member.role === role),
+    members: relatedMembers.filter((member) => member.role === role),
   }));
 
   return (
@@ -175,7 +208,7 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
             Team Details
           </p>
           <h1
-            className="max-w-5xl text-5xl font-bold leading-[0.98] md:text-7xl"
+            className="page-hero-title max-w-5xl font-bold"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {team.name}
@@ -226,8 +259,8 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
               {[
                 { label: 'Acronym', value: team.acronym },
                 { label: 'Leader', value: team.leader },
-                { label: 'Members', value: `${team.members.length}` },
-                { label: 'Projects', value: `${team.projects.length}` },
+                { label: 'Members', value: `${team.memberCount}` },
+                { label: 'Projects', value: `${team.projectCount}` },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -399,9 +432,9 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
           />
 
           <div className="space-y-4">
-            {team.projects.map((project, index) => (
+            {relatedProjects.map((project, index) => (
               <article
-                key={project}
+                key={project.slug}
                 className="rounded-[1.5rem] border p-5"
                 style={{ borderColor: 'rgba(13,17,23,0.08)', background: 'rgba(255,253,248,0.8)' }}
               >
@@ -418,7 +451,7 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
                   className="mt-4 text-2xl font-semibold leading-tight"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  {project}
+                  {project.title}
                 </p>
                 <p className="mt-3 text-sm leading-7 text-black/62">
                   This project line sits within the team's broader mission and contributes to the

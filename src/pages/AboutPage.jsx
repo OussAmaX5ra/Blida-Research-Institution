@@ -6,7 +6,9 @@ import {
   Microscope,
   Users2,
 } from 'lucide-react';
-import { labInfo, publications, teams } from '../data/mockData';
+import { labInfo } from '../data/mockData';
+import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { usePublicData } from '../providers/PublicDataProvider.jsx';
 
 const institutionalValues = [
   {
@@ -47,8 +49,6 @@ const institutionalTimeline = [
   },
 ];
 
-const highlightedOutputs = publications.slice(0, 2);
-
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (
     <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -57,7 +57,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
           {eyebrow}
         </p>
         <h2
-          className="text-4xl font-bold leading-tight md:text-5xl"
+          className="page-section-title font-bold"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -82,6 +82,37 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
 }
 
 export default function AboutPage({ onNavigate }) {
+  const {
+    collections: { publications, teams },
+    error,
+    hasLoaded,
+    isLoading,
+    retry,
+  } = usePublicData();
+
+  if (!hasLoaded && isLoading) {
+    return (
+      <PublicPageLoading
+        eyebrow="About"
+        title="Loading the institutional profile."
+        description="The about page is pulling its live team and publication signals from the public API."
+      />
+    );
+  }
+
+  if (!hasLoaded && error) {
+    return (
+      <PublicPageError
+        title="The institutional profile could not load."
+        description="The page copy is available, but the public-facing output and team signals need a successful API response."
+        error={error}
+        onRetry={retry}
+      />
+    );
+  }
+
+  const highlightedOutputs = publications.slice(0, 2);
+
   return (
     <div className="space-y-8 md:space-y-10">
       <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
@@ -90,7 +121,7 @@ export default function AboutPage({ onNavigate }) {
             About The Lab
           </p>
           <h1
-            className="max-w-4xl text-5xl font-bold leading-[0.98] md:text-7xl"
+            className="page-hero-title max-w-4xl font-bold"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             A modern institutional research lab built on credibility, clarity, and scientific depth.

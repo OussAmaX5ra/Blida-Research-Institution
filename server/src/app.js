@@ -10,9 +10,11 @@ import {
   apiRateLimiter,
   authRouteRateLimiter,
   loginEmailRateLimiter,
+  publicApiRateLimiter,
   securityHeadersMiddleware,
 } from "./middleware/security.js";
 import { authRouter } from "./modules/auth/auth-routes.js";
+import { publicRouter } from "./modules/public/public-routes.js";
 
 export function createApp() {
   const app = express();
@@ -26,7 +28,6 @@ export function createApp() {
       credentials: true,
     }),
   );
-  app.use(apiRateLimiter);
   app.use(cookieParser());
   app.use(express.json({ limit: "100kb" }));
   app.use(express.urlencoded({ extended: true, limit: "100kb" }));
@@ -40,6 +41,8 @@ export function createApp() {
     });
   });
 
+  app.use("/api", publicApiRateLimiter, publicRouter);
+  app.use("/api", apiRateLimiter);
   app.use("/api/admin/auth", authRouteRateLimiter);
   app.use("/api/admin/auth/login", loginEmailRateLimiter);
   app.use("/api/admin/auth", authRouter);

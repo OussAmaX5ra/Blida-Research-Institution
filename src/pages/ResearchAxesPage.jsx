@@ -10,7 +10,9 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { labInfo, publications, researchAxes, teams } from '../data/mockData';
+import { labInfo, researchAxes } from '../data/mockData';
+import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { usePublicData } from '../providers/PublicDataProvider.jsx';
 
 const axisIcons = {
   'artificial-intelligence': Brain,
@@ -18,33 +20,6 @@ const axisIcons = {
   'human-computer-interaction': MonitorSmartphone,
   'distributed-systems': Network,
 };
-
-const totalProjects = teams.reduce((sum, team) => sum + team.projects.length, 0);
-const totalPublications = teams.reduce((sum, team) => sum + team.publications, 0);
-const totalResearchers = teams.reduce((sum, team) => sum + team.members.length, 0);
-
-const platformSignals = [
-  {
-    label: 'Research teams',
-    value: `${teams.length}`,
-    detail: 'Structured around distinct scientific identities and leadership.',
-  },
-  {
-    label: 'Active project lines',
-    value: `${totalProjects}`,
-    detail: 'Applied streams that translate themes into visible lab activity.',
-  },
-  {
-    label: 'Publication footprint',
-    value: `${totalPublications}+`,
-    detail: 'A cumulative record spanning flagship conferences and journals.',
-  },
-  {
-    label: 'Researchers',
-    value: `${totalResearchers}`,
-    detail: 'Professors, doctors, and PhD students contributing across the axes.',
-  },
-];
 
 const relationshipPrompts = [
   {
@@ -72,7 +47,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
           {eyebrow}
         </p>
         <h2
-          className="text-4xl font-bold leading-tight md:text-5xl"
+          className="page-section-title font-bold"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -96,15 +71,16 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   );
 }
 
-function AxisCard({ axis, onNavigate }) {
+function AxisCard({ axis, onNavigate, projects, publications, teams }) {
   const relatedTeams = teams.filter((team) => axis.teamAcronyms.includes(team.acronym));
   const relatedPublications = publications.filter((publication) =>
-    axis.teamAcronyms.includes(publication.teamTag),
+    axis.teamAcronyms.includes(publication.team?.acronym),
   );
+  const relatedProjects = projects.filter((project) => axis.teamAcronyms.includes(project.team?.acronym));
   const leadTeam = relatedTeams[0];
   const Icon = axisIcons[axis.id] ?? Orbit;
-  const projectCount = relatedTeams.reduce((sum, team) => sum + team.projects.length, 0);
-  const memberCount = relatedTeams.reduce((sum, team) => sum + team.members.length, 0);
+  const projectCount = relatedTeams.reduce((sum, team) => sum + team.projectCount, 0);
+  const memberCount = relatedTeams.reduce((sum, team) => sum + team.memberCount, 0);
 
   return (
     <article
@@ -223,14 +199,16 @@ function AxisCard({ axis, onNavigate }) {
                 </p>
                 <p className="mt-3 text-sm leading-7 text-white/70">{team.focus}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {team.projects.map((project) => (
+                  {relatedProjects
+                    .filter((project) => project.team?.slug === team.slug)
+                    .map((project) => (
                     <span
-                      key={project}
+                      key={project.slug}
                       className="rounded-full border border-white/12 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-white/72"
                     >
-                      {project}
+                      {project.title}
                     </span>
-                  ))}
+                    ))}
                 </div>
               </div>
             ))}
@@ -276,6 +254,62 @@ function AxisCard({ axis, onNavigate }) {
 }
 
 export default function ResearchAxesPage({ onNavigate }) {
+  const {
+    collections: { projects, publications, teams },
+    error,
+    hasLoaded,
+    isLoading,
+    retry,
+  } = usePublicData();
+
+  if (!hasLoaded && isLoading) {
+    return (
+      <PublicPageLoading
+        eyebrow="Research Axes"
+        title="Loading the lab's scientific map."
+        description="Axis relationships are being connected to live team and publication records from the public API."
+      />
+    );
+  }
+
+  if (!hasLoaded && error) {
+    return (
+      <PublicPageError
+        title="The research-axis map could not load."
+        description="The conceptual structure is static, but the live team and publication relationships need the public API to respond."
+        error={error}
+        onRetry={retry}
+      />
+    );
+  }
+
+  const totalProjects = teams.reduce((sum, team) => sum + team.projectCount, 0);
+  const totalPublications = teams.reduce((sum, team) => sum + team.publicationCount, 0);
+  const totalResearchers = teams.reduce((sum, team) => sum + team.memberCount, 0);
+
+  const platformSignals = [
+    {
+      label: 'Research teams',
+      value: `${teams.length}`,
+      detail: 'Structured around distinct scientific identities and leadership.',
+    },
+    {
+      label: 'Active project lines',
+      value: `${totalProjects}`,
+      detail: 'Applied streams that translate themes into visible lab activity.',
+    },
+    {
+      label: 'Publication footprint',
+      value: `${totalPublications}+`,
+      detail: 'A cumulative record spanning flagship conferences and journals.',
+    },
+    {
+      label: 'Researchers',
+      value: `${totalResearchers}`,
+      detail: 'Professors, doctors, and PhD students contributing across the axes.',
+    },
+  ];
+
   return (
     <div className="space-y-8 md:space-y-10">
       <section className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr]">
@@ -284,7 +318,7 @@ export default function ResearchAxesPage({ onNavigate }) {
             Research Axes
           </p>
           <h1
-            className="max-w-5xl text-5xl font-bold leading-[0.98] md:text-7xl"
+            className="page-hero-title max-w-5xl font-bold"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Four scientific axes organize how the lab thinks, builds, and publishes.
@@ -479,7 +513,14 @@ export default function ResearchAxesPage({ onNavigate }) {
 
         <div className="space-y-5">
           {researchAxes.map((axis) => (
-            <AxisCard key={axis.id} axis={axis} onNavigate={onNavigate} />
+            <AxisCard
+              key={axis.id}
+              axis={axis}
+              onNavigate={onNavigate}
+              projects={projects}
+              publications={publications}
+              teams={teams}
+            />
           ))}
         </div>
       </section>

@@ -53,25 +53,25 @@ Deliver the public-facing institutional website with real content structure, pol
 - `[x]` Build the Research Axes page
 - `[x]` Build the Research Teams listing page
 - `[x]` Build the Team Details page
-- `[ ]` Build the Members Directory page
-- `[ ]` Build the Projects page
-- `[ ]` Build the Publications page
-- `[ ]` Build the Publication Details page
-- `[ ]` Build the News listing page
-- `[ ]` Build the News Details page
-- `[ ]` Build the Gallery page
-- `[ ]` Build the Contact page
-- `[ ]` Build the public Login page for admins
-- `[ ]` Implement public API endpoints for teams, members, projects, publications, news, and gallery
-- `[ ]` Implement public data fetching and loading states
-- `[ ]` Implement publication filters and search UI
-- `[ ]` Implement member grouping by role and team in the UI
-- `[ ]` Add SEO-ready page titles, metadata hooks, and clean slugs
-- `[ ]` Ensure the full public experience is responsive on mobile, tablet, and desktop
+- `[x]` Build the Members Directory page
+- `[x]` Build the Projects page
+- `[x]` Build the Publications page
+- `[x]` Build the Publication Details page
+- `[x]` Build the News listing page
+- `[x]` Build the News Details page
+- `[x]` Build the Gallery page
+- `[x]` Build the Contact page
+- `[x]` Build the public Login page for admins
+- `[x]` Implement public API endpoints for teams, members, projects, publications, news, and gallery
+- `[x]` Implement public data fetching and loading states
+- `[x]` Implement publication filters and search UI
+- `[x]` Implement member grouping by role and team in the UI
+- `[x]` Add SEO-ready page titles, metadata hooks, and clean slugs
+- `[x]` Ensure the full public experience is responsive on mobile, tablet, and desktop
 
 ### Milestone Status
 
-- `[ ]` Milestone 2 complete
+- `[x]` Milestone 2 complete
 
 ## Milestone 3: Admin Portal
 
@@ -177,4 +177,7 @@ Prepare the platform for stable, secure, accessible, and production-ready deploy
 - `[x]` Planning document created: `PRD.md`
 - `[x]` Task tracker created: `Task.md`
 - `[x]` Implementation started
+- `[x]` Public frontend and backend are connected through `/api/*` endpoints
+- `[x]` Shared mock data has been extracted into `shared/` for cross-runtime use
+- `[ ]` Public content is database-backed
 - `[ ]` Production-ready release achieved

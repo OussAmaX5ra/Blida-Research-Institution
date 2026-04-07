@@ -8,13 +8,11 @@ import {
   Newspaper,
   Users2,
 } from 'lucide-react';
-import { faculty, labInfo, news, publications, teams } from '../data/mockData';
+import { faculty, labInfo } from '../data/mockData';
+import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { usePublicData } from '../providers/PublicDataProvider.jsx';
 
-const featuredTeams = teams.slice(0, 4);
-const featuredPublications = publications.slice(0, 3);
-const latestNews = news.slice(0, 3);
 const featuredFaculty = faculty.slice(0, 4);
-const galleryPreview = news.slice(0, 4);
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (
@@ -24,7 +22,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
           {eyebrow}
         </p>
         <h2
-          className="text-4xl font-bold leading-tight md:text-5xl"
+          className="page-section-title font-bold"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -67,7 +65,7 @@ function TeamCard({ team }) {
         >
           {team.acronym}
         </span>
-        <span className="text-sm text-black/46">{team.publications} papers</span>
+        <span className="text-sm text-black/46">{team.publicationCount} papers</span>
       </div>
 
       <h3
@@ -79,13 +77,13 @@ function TeamCard({ team }) {
       <p className="mt-3 text-base leading-8 text-black/64">{team.focus}</p>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {team.projects.slice(0, 2).map((project) => (
+        {team.themes.slice(0, 2).map((theme) => (
           <span
-            key={project}
+            key={theme}
             className="rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] text-black/52"
             style={{ borderColor: 'rgba(13,17,23,0.08)' }}
           >
-            {project}
+            {theme}
           </span>
         ))}
       </div>
@@ -133,6 +131,41 @@ function NewsCard({ item }) {
 }
 
 export default function HomePage({ onNavigate }) {
+  const {
+    collections: { news, publications, teams },
+    error,
+    hasLoaded,
+    isLoading,
+    retry,
+  } = usePublicData();
+
+  if (!hasLoaded && isLoading) {
+    return (
+      <PublicPageLoading
+        eyebrow="Home"
+        title="Loading the lab homepage from live public records."
+        description="The public shell is ready. Team, publication, and news sections are being hydrated from the API now."
+      />
+    );
+  }
+
+  if (!hasLoaded && error) {
+    return (
+      <PublicPageError
+        title="The homepage could not load its public data."
+        description="The design shell is still available, but the featured teams, publications, and news feed need the public API to respond first."
+        error={error}
+        onRetry={retry}
+      />
+    );
+  }
+
+  const featuredTeams = teams.slice(0, 4);
+  const featuredPublications = publications.slice(0, 3);
+  const latestNews = news.slice(0, 3);
+  const galleryPreview = news.slice(0, 4);
+  const featuredPublication = featuredPublications[0] ?? null;
+
   return (
     <div className="space-y-8 md:space-y-10">
       <section className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
@@ -141,12 +174,12 @@ export default function HomePage({ onNavigate }) {
             Institutional Research Window
           </p>
           <h1
-            className="max-w-4xl text-5xl font-bold leading-[0.98] md:text-7xl"
+            className="page-hero-title max-w-4xl font-bold"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             A research website that reads like an institutional journal, not a brochure.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-9 text-black/66">
+          <p className="page-copy-lg mt-6 max-w-2xl text-black/66">
             {labInfo.mission} The home page is built to balance institutional trust, scientific depth,
             and clear entry points into teams, publications, members, and current lab activity.
           </p>
@@ -236,16 +269,24 @@ export default function HomePage({ onNavigate }) {
             }}
           >
             <p className="text-[11px] uppercase tracking-[0.3em] text-black/45">Featured Record</p>
-            <h2
-              className="mt-4 text-3xl font-semibold leading-tight"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              {featuredPublications[0].title}
-            </h2>
-            <p className="mt-4 text-sm uppercase tracking-[0.24em] text-[var(--color-teal)]">
-              {featuredPublications[0].journal} | {featuredPublications[0].year}
-            </p>
-            <p className="mt-4 text-base leading-8 text-black/65">{featuredPublications[0].abstract}</p>
+            {featuredPublication ? (
+              <>
+                <h2
+                  className="mt-4 text-3xl font-semibold leading-tight"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  {featuredPublication.title}
+                </h2>
+                <p className="mt-4 text-sm uppercase tracking-[0.24em] text-[var(--color-teal)]">
+                  {featuredPublication.journal} | {featuredPublication.year}
+                </p>
+                <p className="mt-4 text-base leading-8 text-black/65">{featuredPublication.abstract}</p>
+              </>
+            ) : (
+              <p className="mt-4 text-base leading-8 text-black/65">
+                Featured publication data will appear here when the public library responds with records.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -439,7 +480,7 @@ export default function HomePage({ onNavigate }) {
                 <img
                   src={item.image}
                   alt={item.headline}
-                  className={`w-full object-cover ${index === 0 ? 'h-72' : 'h-52'}`}
+                  className={`w-full object-cover ${index === 0 ? 'h-56 sm:h-64 md:h-72' : 'h-44 sm:h-52'}`}
                 />
                 <figcaption className="border-t border-black/8 bg-white/80 p-4">
                   <p className="text-[11px] uppercase tracking-[0.24em] text-black/42">{item.category}</p>

@@ -41,14 +41,6 @@ const publicPageHierarchy = [
     path: '/members',
     pageType: 'listing',
     navGroup: 'primary',
-    children: [
-      {
-        id: 'member-details',
-        label: 'Member Details',
-        path: '/members/:slug',
-        pageType: 'detail',
-      },
-    ],
   },
   {
     id: 'projects',
@@ -56,14 +48,6 @@ const publicPageHierarchy = [
     path: '/projects',
     pageType: 'listing',
     navGroup: 'primary',
-    children: [
-      {
-        id: 'project-details',
-        label: 'Project Details',
-        path: '/projects/:slug',
-        pageType: 'detail',
-      },
-    ],
   },
   {
     id: 'publications',

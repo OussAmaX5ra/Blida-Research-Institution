@@ -54,6 +54,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -454,6 +467,7 @@ body::before {
   font-family: var(--font-display);
   color: var(--color-ink);
   line-height: 1.05;
+  text-wrap: balance;
 }
 
 .breadcrumb-text {
@@ -462,12 +476,48 @@ body::before {
   text-transform: uppercase;
 }
 
+.page-hero-title {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.page-section-title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.03;
+  text-wrap: balance;
+}
+
+.page-copy-lg {
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.95;
+}
+
 @media (max-width: 767px) {
+  .shell-width {
+    padding-inline: 1rem;
+  }
+
   .site-main {
     padding-block: 2rem 3rem;
   }
 
   .site-footer {
     margin-top: 4rem;
+  }
+
+  .brand-title {
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+  }
+
+  .brand-kicker,
+  .breadcrumb-text {
+    letter-spacing: 0.18em;
+  }
+
+  .panel-soft,
+  .panel-muted {
+    border-radius: 1.5rem;
   }
 }

@@ -7,34 +7,9 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { publications, researchAxes, teams } from '../data/mockData';
-
-const totalMembers = teams.reduce((sum, team) => sum + team.members.length, 0);
-const totalProjects = teams.reduce((sum, team) => sum + team.projects.length, 0);
-const totalPublications = teams.reduce((sum, team) => sum + team.publications, 0);
-
-const rosterStats = [
-  {
-    label: 'Research teams',
-    value: `${teams.length}`,
-    detail: 'Distinct units with their own leadership, focus, and project lines.',
-  },
-  {
-    label: 'Researchers',
-    value: `${totalMembers}`,
-    detail: 'Structured across professors, doctors, and PhD students.',
-  },
-  {
-    label: 'Project tracks',
-    value: `${totalProjects}`,
-    detail: 'Visible active lines that make each team\'s direction concrete.',
-  },
-  {
-    label: 'Publication footprint',
-    value: `${totalPublications}+`,
-    detail: 'A cumulative output signal carried across the teams.',
-  },
-];
+import { researchAxes } from '../data/mockData';
+import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { usePublicData } from '../providers/PublicDataProvider.jsx';
 
 const rosterNotes = [
   {
@@ -62,7 +37,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
           {eyebrow}
         </p>
         <h2
-          className="text-4xl font-bold leading-tight md:text-5xl"
+          className="page-section-title font-bold"
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {title}
@@ -86,17 +61,15 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   );
 }
 
-function getRoleCount(team, role) {
-  return team.members.filter((member) => member.role === role).length;
-}
-
-function TeamCard({ team, onNavigate }) {
+function TeamCard({ team, members, projects, publications, onNavigate }) {
   const relatedAxis = researchAxes.find((axis) => axis.id === team.axisId);
-  const relatedPublications = publications.filter((publication) => publication.teamTag === team.acronym);
+  const relatedMembers = members.filter((member) => member.team.slug === team.slug);
+  const relatedProjects = projects.filter((project) => project.team?.slug === team.slug);
+  const relatedPublications = publications.filter((publication) => publication.team?.acronym === team.acronym);
   const roleCounts = [
-    { label: 'Professor', value: getRoleCount(team, 'Professor') },
-    { label: 'Doctors', value: getRoleCount(team, 'Doctor') },
-    { label: 'PhD students', value: getRoleCount(team, 'PhD Student') },
+    { label: 'Professor', value: team.memberCounts?.Professor ?? 0 },
+    { label: 'Doctors', value: team.memberCounts?.Doctor ?? 0 },
+    { label: 'PhD students', value: team.memberCounts?.['PhD Student'] ?? 0 },
   ];
 
   return (
@@ -157,7 +130,7 @@ function TeamCard({ team, onNavigate }) {
                 className="mt-2 text-2xl font-semibold"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                {team.projects.length}
+                {team.projectCount}
               </p>
             </div>
 
@@ -170,7 +143,7 @@ function TeamCard({ team, onNavigate }) {
                 className="mt-2 text-2xl font-semibold"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                {team.publications}
+                {team.publicationCount}
               </p>
             </div>
           </div>
@@ -191,13 +164,13 @@ function TeamCard({ team, onNavigate }) {
           <div className="mt-7">
             <p className="text-[11px] uppercase tracking-[0.26em] text-black/44">Active project lines</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {team.projects.map((project) => (
+              {relatedProjects.map((project) => (
                 <span
-                  key={project}
+                  key={project.slug}
                   className="rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-black/56"
                   style={{ borderColor: 'rgba(13,17,23,0.08)' }}
                 >
-                  {project}
+                  {project.title}
                 </span>
               ))}
             </div>
@@ -218,9 +191,9 @@ function TeamCard({ team, onNavigate }) {
             </div>
 
             <div className="mt-4 space-y-3">
-              {team.members.map((member) => (
+              {relatedMembers.map((member) => (
                 <div
-                  key={member.name}
+                  key={member.slug}
                   className="flex items-center justify-between gap-4 rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
@@ -277,6 +250,62 @@ function TeamCard({ team, onNavigate }) {
 }
 
 export default function TeamsPage({ onNavigate }) {
+  const {
+    collections: { members, projects, publications, teams },
+    error,
+    hasLoaded,
+    isLoading,
+    retry,
+  } = usePublicData();
+
+  if (!hasLoaded && isLoading) {
+    return (
+      <PublicPageLoading
+        eyebrow="Teams"
+        title="Loading the public research-team directory."
+        description="The listing page is hydrating live team, member, and publication signals from the public API."
+      />
+    );
+  }
+
+  if (!hasLoaded && error) {
+    return (
+      <PublicPageError
+        title="The research-team directory could not load."
+        description="The shell is ready, but the public team catalogue needs the API before the roster can render."
+        error={error}
+        onRetry={retry}
+      />
+    );
+  }
+
+  const totalMembers = teams.reduce((sum, team) => sum + team.memberCount, 0);
+  const totalProjects = teams.reduce((sum, team) => sum + team.projectCount, 0);
+  const totalPublications = teams.reduce((sum, team) => sum + team.publicationCount, 0);
+
+  const rosterStats = [
+    {
+      label: 'Research teams',
+      value: `${teams.length}`,
+      detail: 'Distinct units with their own leadership, focus, and project lines.',
+    },
+    {
+      label: 'Researchers',
+      value: `${totalMembers}`,
+      detail: 'Structured across professors, doctors, and PhD students.',
+    },
+    {
+      label: 'Project tracks',
+      value: `${totalProjects}`,
+      detail: 'Visible active lines that make each team\'s direction concrete.',
+    },
+    {
+      label: 'Publication footprint',
+      value: `${totalPublications}+`,
+      detail: 'A cumulative output signal carried across the teams.',
+    },
+  ];
+
   return (
     <div className="space-y-8 md:space-y-10">
       <section className="grid gap-10 lg:grid-cols-[1.08fr_0.92fr]">
@@ -284,10 +313,10 @@ export default function TeamsPage({ onNavigate }) {
           <p className="mb-4 text-[12px] font-semibold uppercase tracking-[0.34em] text-[var(--color-teal)]">
             Research Teams
           </p>
-          <h1
-            className="max-w-5xl text-5xl font-bold leading-[0.98] md:text-7xl"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+            <h1
+              className="page-hero-title max-w-5xl font-bold"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
             The lab&apos;s research work is organized into four teams with distinct scientific identities.
           </h1>
           <p className="mt-6 max-w-3xl text-lg leading-9 text-black/66">
@@ -481,7 +510,14 @@ export default function TeamsPage({ onNavigate }) {
 
         <div className="space-y-5">
           {teams.map((team) => (
-            <TeamCard key={team.id} team={team} onNavigate={onNavigate} />
+            <TeamCard
+              key={team.id}
+              team={team}
+              members={members}
+              projects={projects}
+              publications={publications}
+              onNavigate={onNavigate}
+            />
           ))}
         </div>
       </section>

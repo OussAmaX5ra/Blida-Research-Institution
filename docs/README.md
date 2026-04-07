@@ -1,16 +1,28 @@
-# React + Vite
+# Documentation Index
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the planning and implementation documents for the Blida Research Lab platform.
 
-Currently, two official plugins are available:
+## What Is Here
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `PRD.md`: product scope, goals, and feature requirements
+- `Task.md`: milestone tracker and current delivery status
+- `public-information-architecture.md`: public site route and page planning
+- `admin-information-architecture.md`: admin portal route and workflow planning
+- `database-schemas.md`: target MongoDB schema design
+- `authentication-flow.md`: admin authentication design
+- `repository-structure.md`: current repository layout and target architecture
+- `validation-strategy.md`: request validation rules and approach
 
-## React Compiler
+## How To Read These Docs
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Treat `PRD.md` and the architecture documents as the product target.
+- Treat `Task.md` as the status tracker for what is already implemented.
+- Treat implementation notes inside the docs as the source of truth when the current repo shape has not yet reached the target architecture.
 
-## Expanding the ESLint configuration
+## Current Implementation Snapshot
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- The public frontend currently lives at the repository root under `src/`, `public/`, and the root `package.json`.
+- The backend lives under `server/`.
+- Shared runtime-safe mock data now lives under `shared/`.
+- Public pages are driven by the backend public API, but that API is still backed by shared mock data rather than database collections.
+- The admin authentication backend is implemented, but the admin portal UI and CRUD workflows are still pending.

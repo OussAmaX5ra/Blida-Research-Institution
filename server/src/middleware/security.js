@@ -34,6 +34,21 @@ export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
 });
 
+export const publicApiRateLimiter = rateLimit({
+  handler: (request, response) => {
+    sendRateLimitResponse(response, {
+      path: request.originalUrl,
+      scope: "public-api",
+      windowMs: 15 * 60 * 1000,
+    });
+  },
+  legacyHeaders: false,
+  limit: 1000,
+  skip: (request) => request.path === "/health",
+  standardHeaders: true,
+  windowMs: 15 * 60 * 1000,
+});
+
 export const authRouteRateLimiter = rateLimit({
   handler: (_request, response) => {
     sendRateLimitResponse(response, {

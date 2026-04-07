@@ -9,7 +9,7 @@ status: Approved for Planning
 
 ## 1. Product Overview
 
-The Blida Research Lab Institutional Site is a production-ready university platform for presenting the laboratory's identity, research teams, members, projects, publications, news, and media. The platform must serve two core audiences:
+The Blida Research Institute Institutional Site is a production-ready university platform for presenting the laboratory's identity, research teams, members, projects, publications, news, and media. The platform must serve two core audiences:
 
 - Public visitors who need a trustworthy, modern, searchable window into the lab's scientific work
 - Authorized administrators who need a secure management portal for maintaining the lab's institutional and research data

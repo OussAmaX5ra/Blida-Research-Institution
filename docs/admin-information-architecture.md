@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the implementation-level information architecture for the admin portal of the Blida Research Lab Institutional Site. It translates the PRD into a concrete admin structure that can be used for routing, permissions, layouts, CRUD workflows, and backend/API planning.
+This document defines the implementation-level information architecture for the admin portal of the Blida Research Institute Institutional Site. It translates the PRD into a concrete admin structure that can be used for routing, permissions, layouts, CRUD workflows, and backend/API planning.
 
 ## Core Objectives
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how request and payload validation should be handled in the backend for the Blida Research Lab platform. It establishes one consistent approach so future routes do not invent their own validation rules or error shapes.
+This document defines how request and payload validation should be handled in the backend for the Blida Research Institute platform. It establishes one consistent approach so future routes do not invent their own validation rules or error shapes.
 
 ## Validation Standard
 

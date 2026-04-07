@@ -1,6 +1,6 @@
 # Database Schemas
 
-This document defines the MongoDB collections and fields for the Blida Research Lab Institutional Site. It is written to guide Mongoose schema implementation and API validation rules.
+This document defines the MongoDB collections and fields for the Blida Research Institute Institutional Site. It is written to guide Mongoose schema implementation and API validation rules.
 
 ## Shared Conventions
 

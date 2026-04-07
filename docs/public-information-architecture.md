@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the public-facing information architecture for the Blida Research Lab platform and separates what is implemented now from what remains planned.
+This document defines the public-facing information architecture for the Blida Research Institute platform and separates what is implemented now from what remains planned.
 
 ## Current Public Experience
 

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Backend API for the Blida Research Lab platform",
+  "description": "Backend API for the Blida Research Institute platform",
   "engines": {
     "node": ">=20.0.0"
   },

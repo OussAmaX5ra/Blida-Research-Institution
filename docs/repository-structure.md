@@ -1,6 +1,6 @@
 # Repository Structure
 
-This document records both the current implemented layout and the target repository structure for the Blida Research Lab platform.
+This document records both the current implemented layout and the target repository structure for the Blida Research Institute platform.
 
 ## Current Implemented Layout
 

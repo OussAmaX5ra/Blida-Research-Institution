@@ -1,9 +1,9 @@
 export const labInfo = {
-  name: "Blida Institution Research Laboratory",
-  acronym: " BIRL",
+  name: "Blida Research Institute",
+  acronym: "BRI",
   mission: "Pioneering the frontiers of intelligent systems, bioinformatics, and human-computer interaction through rigorous interdisciplinary research.",
   vision: "A world where science and technology converge to solve humanity's most complex challenges.",
-  founded: 2009,
+  founded: 2026,
   axes: ["Artificial Intelligence", "Bioinformatics", "Human-Computer Interaction", "Distributed Systems"],
   stats: [
     { label: "Publications", value: "180+" },
@@ -14,7 +14,7 @@ export const labInfo = {
 };
 
 export const contactInfo = {
-  email: "contact@nexus-lab.edu",
+  email: "contact@blida-research-institute.dz",
   phone: "+213 (0) 25 11 84 20",
   office: "Research Laboratories Wing, Building C, Second Floor",
   campus: "University Campus of Blida 1",
@@ -502,8 +502,8 @@ export const publications = [
 export const news = [
   {
     id: 1,
-    slug: "nexus-lab-wins-best-paper-award-at-neurips-2024",
-    headline: "Nexus Lab wins Best Paper Award at NeurIPS 2024",
+    slug: "blida-research-institute-wins-best-paper-award-at-neurips-2024",
+    headline: "Blida Research Institute wins Best Paper Award at NeurIPS 2024",
     dateIso: "2024-12-12",
     date: "December 12, 2024",
     category: "Award",
@@ -534,14 +534,14 @@ export const news = [
   },
   {
     id: 3,
-    slug: "nexus-lab-opens-new-collaboration-with-mit-media-lab",
-    headline: "Nexus Lab Opens New Collaboration with MIT Media Lab",
+    slug: "blida-research-institute-opens-new-collaboration-with-mit-media-lab",
+    headline: "Blida Research Institute Opens New Collaboration with MIT Media Lab",
     dateIso: "2024-10-18",
     date: "October 18, 2024",
     category: "Partnership",
     teamTags: ["HCI"],
     image: "https://images.unsplash.com/photo-1564325724739-bae0bd08762c?w=600&q=80",
-    excerpt: "NEXUS and MIT Media Lab formalize a joint research initiative focused on accessible computing interfaces for neurodiverse populations.",
+    excerpt: "Blida Research Institute and MIT Media Lab formalize a joint research initiative focused on accessible computing interfaces for neurodiverse populations.",
     body: [
       "The new collaboration expands the Human-Computer Interaction team's research network into a highly visible international partnership. Both groups will focus on accessible computing systems that better serve neurodiverse users through adaptive interface design and more responsive interaction models.",
       "The partnership is expected to support shared workshops, co-authored outputs, and comparative evaluation across different research environments. It also adds a strong public-facing signal that the lab is operating inside a broader ecosystem of international collaboration.",

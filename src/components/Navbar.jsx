@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FlaskConical, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const navLinks = [
   { label: 'About', href: '#about' },
@@ -32,16 +32,19 @@ export default function Navbar() {
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded flex items-center justify-center"
-               style={{ background: 'linear-gradient(135deg, var(--color-teal), var(--color-teal-light))' }}>
-            <FlaskConical size={16} color="white" strokeWidth={1.5} />
+          <div className="w-8 h-8 overflow-hidden rounded bg-white p-0.5 shadow-sm">
+            <img
+              src="/blida-research-institute-logo.png"
+              alt="Blida Research Institute logo"
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
             <span className="font-display font-bold text-base tracking-tight" style={{ color: 'var(--color-ink)' }}>
-              NEXUS
+              BRI
             </span>
             <span className="text-xs ml-1.5 font-light" style={{ color: 'var(--color-muted)' }}>
-              Research Lab
+              Blida Research Institute
             </span>
           </div>
         </a>

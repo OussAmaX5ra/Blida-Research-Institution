@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the authentication flow for admin users of the Blida Research Lab platform. It turns the PRD security requirements into an implementation-ready backend design.
+This document defines the authentication flow for admin users of the Blida Research Institute platform. It turns the PRD security requirements into an implementation-ready backend design.
 
 ## Goals
 

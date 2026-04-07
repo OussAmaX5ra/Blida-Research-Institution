@@ -520,7 +520,7 @@ export default function HomePage({ onNavigate }) {
               {
                 icon: Mail,
                 label: 'General Contact',
-                value: 'contact@nexus-lab.edu',
+                value: 'contact@blida-research-institute.dz',
               },
               {
                 icon: Users2,

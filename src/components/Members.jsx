@@ -62,7 +62,7 @@ export default function Members() {
               Faculty & Researchers
             </h2>
             <p className="text-base max-w-sm text-right" style={{ color: 'var(--color-muted)', fontWeight: 300 }}>
-              The brilliant minds behind NEXUS's world-class research.
+              The brilliant minds behind Blida Research Institute's scientific work.
             </p>
           </div>
           <div className="mt-4 h-px" style={{ background: 'linear-gradient(to right, var(--color-gold), transparent)' }} />

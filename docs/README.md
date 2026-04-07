@@ -1,6 +1,6 @@
 # Documentation Index
 
-This folder contains the planning and implementation documents for the Blida Research Lab platform.
+This folder contains the planning and implementation documents for the Blida Research Institute platform.
 
 ## What Is Here
 

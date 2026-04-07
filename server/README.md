@@ -1,6 +1,6 @@
 # Server Workspace
 
-This folder contains the backend API for the Blida Research Lab platform.
+This folder contains the backend API for the Blida Research Institute platform.
 
 ## Structure
 

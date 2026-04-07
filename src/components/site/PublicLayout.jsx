@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   ChevronRight,
-  Compass,
-  FlaskConical,
   Menu,
   Shield,
   X,
@@ -57,12 +55,16 @@ function PublicHeader({ currentRoute, onNavigate }) {
           className="flex min-w-0 items-center gap-3"
           onClick={(event) => onNavigate(event, '/')}
         >
-          <div className="brand-mark">
-            <FlaskConical size={18} color="#f7f5f0" strokeWidth={1.8} />
+          <div className="brand-mark brand-mark-logo">
+            <img
+              src="/blida-research-institute-logo.png"
+              alt="Blida Research Institute logo"
+              className="brand-logo-image"
+            />
           </div>
           <div className="min-w-0">
-            <p className="brand-title">Nexus Lab</p>
-            <p className="brand-kicker">Public Research Platform</p>
+            <p className="brand-title">Blida Research Institute</p>
+            <p className="brand-kicker">Institutional Research Platform</p>
           </div>
         </a>
 
@@ -245,19 +247,23 @@ function PublicFooter({ currentRoute, onNavigate }) {
       <div className="shell-width grid gap-10 py-12 lg:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">
-            <div className="brand-mark brand-mark-soft">
-              <Compass size={18} style={{ color: 'var(--color-gold)' }} />
+            <div className="brand-mark brand-mark-logo brand-mark-soft brand-mark-footer">
+              <img
+                src="/blida-research-institute-logo.png"
+                alt="Blida Research Institute logo"
+                className="brand-logo-image"
+              />
             </div>
             <div>
               <p className="brand-title brand-title-inverse text-2xl tracking-[0.03em] normal-case">
-                Public Shell
+                Blida Research Institute
               </p>
-              <p className="brand-kicker brand-kicker-inverse">Shared institutional frame</p>
+              <p className="brand-kicker brand-kicker-inverse">Public academic platform</p>
             </div>
           </div>
           <p className="text-body-inverse mt-5 max-w-lg text-sm">
-            The footer now mirrors the public information architecture and keeps the admin entry
-            structurally separate from the academic browsing experience.
+            Explore the institute's teams, publications, news, and gallery while keeping
+            administrative access clearly separated from the public academic experience.
           </p>
         </div>
 
@@ -300,7 +306,7 @@ function PublicFooter({ currentRoute, onNavigate }) {
       <div className="border-t px-6 py-5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="shell-width flex flex-col gap-3 px-0 text-xs uppercase tracking-[0.2em] md:flex-row md:items-center md:justify-between"
              style={{ color: 'rgba(255,255,255,0.36)' }}>
-          <p>Milestone 2 | Shared layout completed</p>
+          <p>Blida Research Institute | Public Platform</p>
           <p>{currentRoute ? currentRoute.label : 'Unknown Route'}</p>
         </div>
       </div>

@@ -1,6 +1,6 @@
-const DEFAULT_SITE_NAME = 'Blida Research Lab';
+const DEFAULT_SITE_NAME = 'Blida Research Institute';
 const DEFAULT_DESCRIPTION =
-  'Blida Research Lab public platform for research teams, members, projects, publications, news, and institutional updates.';
+  'Blida Research Institute public platform for research teams, members, projects, publications, news, and institutional updates.';
 
 function ensureMeta(selector, attributes) {
   let element = document.head.querySelector(selector);
@@ -95,7 +95,7 @@ export function buildRouteMetadata({
     return {
       title: 'Page Not Found',
       description:
-        'The requested page is not part of the public Blida Research Lab route map.',
+        'The requested page is not part of the public Blida Research Institute route map.',
       pathname,
       robots: 'noindex,follow',
     };
@@ -105,57 +105,57 @@ export function buildRouteMetadata({
     home: {
       title: 'Home',
       description:
-        'Discover Blida Research Lab research teams, publications, institutional news, and public academic activity.',
+        'Discover Blida Research Institute research teams, publications, institutional news, and public academic activity.',
     },
     about: {
       title: 'About the Lab',
       description:
-        'Learn about the Blida Research Lab mission, institutional position, and scientific direction.',
+        'Learn about the Blida Research Institute mission, institutional position, and scientific direction.',
     },
     'research-axes': {
       title: 'Research Axes',
       description:
-        'Explore the major scientific axes shaping Blida Research Lab across AI, bioinformatics, HCI, and distributed systems.',
+        'Explore the major scientific axes shaping Blida Research Institute across AI, bioinformatics, HCI, and distributed systems.',
     },
     teams: {
       title: 'Research Teams',
       description:
-        'Browse the Blida Research Lab research teams, their leaders, themes, and scientific focus areas.',
+        'Browse the Blida Research Institute research teams, their leaders, themes, and scientific focus areas.',
     },
     members: {
       title: 'Members Directory',
       description:
-        'Search the public directory of Blida Research Lab professors, doctors, and PhD students by role, team, and theme.',
+        'Search the public directory of Blida Research Institute professors, doctors, and PhD students by role, team, and theme.',
     },
     projects: {
       title: 'Projects',
       description:
-        'Review active and completed Blida Research Lab projects by team, status, year, and scientific theme.',
+        'Review active and completed Blida Research Institute projects by team, status, year, and scientific theme.',
     },
     publications: {
       title: 'Publications',
       description:
-        'Search the Blida Research Lab publication library by year, publisher, team, author, and scientific theme.',
+        'Search the Blida Research Institute publication library by year, publisher, team, author, and scientific theme.',
     },
     news: {
       title: 'News',
       description:
-        'Read institutional news, awards, funding, milestones, and research updates from Blida Research Lab.',
+        'Read institutional news, awards, funding, milestones, and research updates from Blida Research Institute.',
     },
     gallery: {
       title: 'Gallery',
       description:
-        'Browse public imagery and institutional moments from Blida Research Lab events, workshops, and research life.',
+        'Browse public imagery and institutional moments from Blida Research Institute events, workshops, and research life.',
     },
     contact: {
       title: 'Contact',
       description:
-        'Find contact details, institutional location, and outreach guidance for Blida Research Lab.',
+        'Find contact details, institutional location, and outreach guidance for Blida Research Institute.',
     },
     'admin-login': {
       title: 'Admin Login',
       description:
-        'Secure administrator sign-in for the Blida Research Lab management portal.',
+        'Secure administrator sign-in for the Blida Research Institute management portal.',
       robots: 'noindex,nofollow',
     },
   };
@@ -182,7 +182,7 @@ export function buildRouteMetadata({
           title: activePublication.title,
           description:
             activePublication.abstract ??
-            `Publication record from ${activePublication.publisher} (${activePublication.year}) in the Blida Research Lab library.`,
+            `Publication record from ${activePublication.publisher} (${activePublication.year}) in the Blida Research Institute library.`,
           pathname,
         }
       : {
@@ -200,7 +200,7 @@ export function buildRouteMetadata({
           title: activeNews.headline,
           description:
             activeNews.excerpt ??
-            'Institutional news and research update from the Blida Research Lab public platform.',
+            'Institutional news and research update from the Blida Research Institute public platform.',
           pathname,
         }
       : {

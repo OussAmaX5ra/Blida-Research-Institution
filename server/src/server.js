@@ -1,3 +1,4 @@
+/* globals process */
 import { createServer } from "node:http";
 
 import { createApp } from "./app.js";

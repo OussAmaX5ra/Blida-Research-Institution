@@ -158,6 +158,66 @@ export function buildRouteMetadata({
         'Secure administrator sign-in for the Blida Research Institute management portal.',
       robots: 'noindex,nofollow',
     },
+    'admin-dashboard': {
+      title: 'Admin Dashboard',
+      description:
+        'Protected administration workspace for the Blida Research Institute management platform.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-teams': {
+      title: 'Admin Teams',
+      description:
+        'Protected team management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-members': {
+      title: 'Admin Members',
+      description:
+        'Protected member management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-projects': {
+      title: 'Admin Projects',
+      description:
+        'Protected project management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-publications': {
+      title: 'Admin Publications',
+      description:
+        'Protected publication management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-news': {
+      title: 'Admin News',
+      description:
+        'Protected news management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-gallery': {
+      title: 'Admin Gallery',
+      description:
+        'Protected gallery management workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-users': {
+      title: 'Admin Users & Roles',
+      description:
+        'Protected user administration workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-activity': {
+      title: 'Admin Activity',
+      description:
+        'Protected activity monitoring workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
+    'admin-settings': {
+      title: 'Admin Settings',
+      description:
+        'Protected system settings workspace for the Blida Research Institute administration portal.',
+      robots: 'noindex,nofollow',
+    },
   };
 
   if (currentRoute.id === 'team-details') {

@@ -100,6 +100,126 @@ const publicPageHierarchy = [
     pageType: 'utility',
     navGroup: 'utility',
   },
+  {
+    id: 'admin-dashboard',
+    label: 'Dashboard',
+    path: '/admin',
+    pageType: 'admin',
+    navGroup: 'admin',
+    children: [
+      {
+        id: 'admin-teams',
+        label: 'Teams',
+        path: '/admin/teams',
+        pageType: 'admin',
+        navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-team-create',
+            label: 'Create Team',
+            path: '/admin/teams/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-team-edit',
+            label: 'Edit Team',
+            path: '/admin/teams/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
+      },
+      {
+        id: 'admin-members',
+        label: 'Members',
+        path: '/admin/members',
+        pageType: 'admin',
+        navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-member-create',
+            label: 'Create Member',
+            path: '/admin/members/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-member-edit',
+            label: 'Edit Member',
+            path: '/admin/members/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
+      },
+      {
+        id: 'admin-projects',
+        label: 'Projects',
+        path: '/admin/projects',
+        pageType: 'admin',
+        navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-project-create',
+            label: 'Create Project',
+            path: '/admin/projects/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-project-edit',
+            label: 'Edit Project',
+            path: '/admin/projects/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
+      },
+      {
+        id: 'admin-publications',
+        label: 'Publications',
+        path: '/admin/publications',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+      {
+        id: 'admin-news',
+        label: 'News',
+        path: '/admin/news',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+      {
+        id: 'admin-gallery',
+        label: 'Gallery',
+        path: '/admin/gallery',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+      {
+        id: 'admin-users',
+        label: 'Users & Roles',
+        path: '/admin/users',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+      {
+        id: 'admin-activity',
+        label: 'Activity',
+        path: '/admin/activity',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+      {
+        id: 'admin-settings',
+        label: 'Settings',
+        path: '/admin/settings',
+        pageType: 'admin',
+        navGroup: 'admin',
+      },
+    ],
+  },
 ];
 
 function flattenHierarchy(nodes, parentId = null) {
@@ -124,6 +244,10 @@ export const publicPrimaryNavigation = publicRouteMap.filter(
 
 export const publicUtilityNavigation = publicRouteMap.filter(
   (route) => route.navGroup === 'utility',
+);
+
+export const adminPrimaryNavigation = publicRouteMap.filter(
+  (route) => route.navGroup === 'admin' && route.parentId === 'admin-dashboard',
 );
 
 export const publicFooterNavigation = [

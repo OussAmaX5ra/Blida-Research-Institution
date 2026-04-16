@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (

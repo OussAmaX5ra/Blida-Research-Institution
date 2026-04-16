@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const notes = [
   'The gallery should humanize the institution without collapsing into a generic image board.',

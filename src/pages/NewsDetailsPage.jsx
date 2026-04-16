@@ -10,7 +10,7 @@ import {
   Users2,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (
@@ -95,7 +95,6 @@ export default function NewsDetailsPage({ slug, onNavigate }) {
       news: liveNews,
       projects: liveProjects,
       publications: livePublications,
-      teams: liveTeams,
     },
     error,
     hasLoaded,

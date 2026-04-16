@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { labInfo, researchAxes } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const axisIcons = {
   'artificial-intelligence': Brain,

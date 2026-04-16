@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { contactInfo, labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const visitChecklist = [
   'Use the central mailbox for institutional questions, administrative coordination, and official correspondence.',
@@ -52,6 +52,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
 }
 
 function ContactCard({ icon: Icon, label, value, detail, href, accent = 'var(--color-teal)' }) {
+  const IconComponent = Icon;
   const content = (
     <div
       className="rounded-[1.7rem] border p-6 transition-transform duration-200 hover:-translate-y-[1px]"

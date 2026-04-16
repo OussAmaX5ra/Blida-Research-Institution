@@ -12,24 +12,9 @@ import {
   X,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const statusOrder = ['Ongoing', 'Planned', 'Completed'];
-const projectRecords = [];
-
-
-const snapshot = [
-  { label: 'Visible projects', value: `${projectRecords.length}`, detail: 'Current and completed research lines visible in the public catalogue.' },
-  { label: 'Ongoing', value: `${projectRecords.filter((project) => project.status === 'Ongoing').length}`, detail: 'Actively advancing within the lab’s present research cycle.' },
-  { label: 'PhD-linked', value: `${projectRecords.filter((project) => project.phdLinked).length}`, detail: 'Project lines already tied to doctoral progress and future timeline work.' },
-  { label: 'Axes covered', value: `${new Set(projectRecords.map((project) => project.axisId)).size}`, detail: 'The project layer spans the lab’s full scientific map.' },
-];
-
-const notes = [
-  'Projects should feel like evidence of active scientific work, not generic portfolio tiles.',
-  'Status, team alignment, year, and theme need to remain visible even when visitors are scanning quickly.',
-  'PhD-linked initiatives should already signal that they connect to the future progress tracker layer.',
-];
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (
@@ -264,6 +249,12 @@ export default function ProjectsPage({ onNavigate }) {
     { label: 'Ongoing', value: `${projectRecords.filter((project) => project.status === 'Ongoing').length}`, detail: 'Actively advancing within the lab\'s present research cycle.' },
     { label: 'PhD-linked', value: `${projectRecords.filter((project) => project.phdLinked).length}`, detail: 'Project lines already tied to doctoral progress and future timeline work.' },
     { label: 'Axes covered', value: `${new Set(projectRecords.map((project) => project.axisId)).size}`, detail: 'The project layer spans the lab\'s full scientific map.' },
+  ];
+
+  const notes = [
+    'Projects should feel like evidence of active scientific work, not generic portfolio tiles.',
+    'Status, team alignment, year, and theme need to remain visible even when visitors are scanning quickly.',
+    'PhD-linked initiatives should already signal that they connect to the future progress tracker layer.',
   ];
 
   const filteredProjects = projectRecords.filter((project) => {

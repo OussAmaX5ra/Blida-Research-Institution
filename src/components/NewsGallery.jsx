@@ -124,7 +124,7 @@ export default function NewsGallery() {
             Gallery
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {news.map((item, i) => (
+            {news.map((item) => (
               <div key={item.id}
                    className="aspect-video rounded-sm overflow-hidden relative group cursor-pointer"
                    style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>

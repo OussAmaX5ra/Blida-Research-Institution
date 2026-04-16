@@ -91,7 +91,7 @@ export async function refreshAdminSession(request) {
           user: await User.findById(request.user.id),
         }
       : await resolveAuthenticatedAdminFromRefreshCookie(request);
-  const { refreshToken, session, user } = refreshContext;
+  const { session, user } = refreshContext;
 
   const { accessToken, refreshToken: nextRefreshToken } = buildSessionTokens({
     role: user.role,

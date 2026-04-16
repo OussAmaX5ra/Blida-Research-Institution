@@ -41,7 +41,8 @@ function getMessage(error, statusCode) {
   return statusCode >= 500 ? "An unexpected error occurred." : error.message;
 }
 
-export function errorHandler(error, request, response, _next) {
+export function errorHandler(error, request, response, next) {
+  void next; // Express error handler requires 4 params even if last one isn't used
   const statusCode = getStatusCode(error);
   const code = getCode(error, statusCode);
   const message = getMessage(error, statusCode);

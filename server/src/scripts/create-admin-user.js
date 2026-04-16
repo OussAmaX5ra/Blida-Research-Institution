@@ -1,3 +1,4 @@
+/* globals process */
 import { fileURLToPath } from "node:url";
 
 import { z } from "zod";

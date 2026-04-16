@@ -81,21 +81,21 @@ Create a secure management portal that allows authenticated admins to manage all
 
 ### Tasks
 
-- `[ ]` Build the admin shell layout with sidebar, header, and protected navigation
-- `[ ]` Build the admin dashboard overview
-- `[ ]` Build the Teams management list view
-- `[ ]` Build the Team create form
-- `[ ]` Build the Team edit form
-- `[ ]` Build the Team delete workflow with confirmation
-- `[ ]` Build the Members management list view
-- `[ ]` Build the Member create form
-- `[ ]` Build the Member edit form
-- `[ ]` Build the Member delete workflow with confirmation
-- `[ ]` Ensure member roles are handled separately as `Professor`, `Doctor`, and `PhD Student`
-- `[ ]` Build the Projects management list view
-- `[ ]` Build the Project create form
-- `[ ]` Build the Project edit form
-- `[ ]` Build the Project delete workflow with confirmation
+- `[x]` Build the admin shell layout with sidebar, header, and protected navigation
+- `[x]` Build the admin dashboard overview
+- `[x]` Build the Teams management list view
+- `[x]` Build the Team create form
+- `[x]` Build the Team edit form
+- `[x]` Build the Team delete workflow with confirmation
+- `[x]` Build the Members management list view
+- `[x]` Build the Member create form
+- `[x]` Build the Member edit form
+- `[x]` Build the Member delete workflow with confirmation
+- `[x]` Ensure member roles are handled separately as `Professor`, `Doctor`, and `PhD Student`
+- `[x]` Build the Projects management list view
+- `[x]` Build the Project create form
+- `[x]` Build the Project edit form
+- `[x]` Build the Project delete workflow with confirmation
 - `[ ]` Build the Publications management list view
 - `[ ]` Build the Publication create form
 - `[ ]` Build the Publication edit form
@@ -112,6 +112,7 @@ Create a secure management portal that allows authenticated admins to manage all
 - `[ ]` Implement user activation, deactivation, role assignment, and password reset workflows
 - `[ ]` Implement admin activity logging for important actions
 - `[ ]` Implement client-side and server-side validation across all admin forms
+- `[ ]` Connect admin team , member , project , publication , news and gallery CRUD to the public data source so newly created or updated records appear on the public site
 
 ### Milestone Status
 

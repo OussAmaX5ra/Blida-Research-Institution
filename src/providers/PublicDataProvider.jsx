@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useEffectEvent, useState, useTransition } from 'react';
+import { useEffect, useEffectEvent, useState, useTransition } from 'react';
 import { fetchPublicCollections } from '../lib/public-api';
-
-const PublicDataContext = createContext(null);
+import { PublicDataContext } from './PublicDataContext.js';
 
 const emptyCollections = {
   teams: [],
@@ -21,7 +20,7 @@ const emptyMeta = {
   gallery: {},
 };
 
-export function PublicDataProvider({ children }) {
+function PublicDataProvider({ children }) {
   const [state, setState] = useState({
     collections: emptyCollections,
     meta: emptyMeta,
@@ -109,6 +108,7 @@ export function PublicDataProvider({ children }) {
         hasLoaded: state.status === 'ready' || state.status === 'refreshing',
         retry() {
           const abortController = new AbortController();
+          // eslint-disable-next-line react-hooks/rules-of-hooks
           loadPublicData(abortController.signal);
         },
       }}
@@ -118,12 +118,4 @@ export function PublicDataProvider({ children }) {
   );
 }
 
-export function usePublicData() {
-  const context = useContext(PublicDataContext);
-
-  if (!context) {
-    throw new Error('usePublicData must be used within a PublicDataProvider.');
-  }
-
-  return context;
-}
+export default PublicDataProvider;

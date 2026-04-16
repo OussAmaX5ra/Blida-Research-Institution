@@ -1,3 +1,4 @@
+/* globals process */
 import dns from "node:dns";
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";

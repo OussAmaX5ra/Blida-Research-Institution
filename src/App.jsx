@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import AdminShell from './components/admin/AdminShell';
 import PublicLayout from './components/site/PublicLayout';
 import { matchPublicRoute, normalizePathname } from './site/publicRouting';
 import AboutPage from './pages/AboutPage';
 import AdminLoginPage from './pages/AdminLoginPage';
+import AdminMemberFormPage from './pages/admin/AdminMemberFormPage.jsx';
+import AdminMembersPage from './pages/admin/AdminMembersPage.jsx';
+import AdminProjectFormPage from './pages/admin/AdminProjectFormPage.jsx';
+import AdminProjectsPage from './pages/admin/AdminProjectsPage.jsx';
+import AdminTeamFormPage from './pages/admin/AdminTeamFormPage.jsx';
+import AdminTeamsPage from './pages/admin/AdminTeamsPage.jsx';
 import ContactPage from './pages/ContactPage';
 import HomePage from './pages/HomePage';
 import GalleryPage from './pages/GalleryPage';
@@ -15,11 +22,21 @@ import PublicationsPage from './pages/PublicationsPage';
 import ResearchAxesPage from './pages/ResearchAxesPage';
 import TeamDetailsPage from './pages/TeamDetailsPage';
 import TeamsPage from './pages/TeamsPage';
-import { usePublicData } from './providers/PublicDataProvider.jsx';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
+import AdminSectionPage from './pages/admin/AdminSectionPage.jsx';
+import { useAdminSession } from './providers/useAdminSession.js';
+import { usePublicData } from './providers/usePublicData.js';
 import { applyDocumentMetadata, buildRouteMetadata } from './site/documentMetadata';
+
+function replacePath(nextPath) {
+  window.history.replaceState({}, '', nextPath);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 export default function App() {
   const { collections } = usePublicData();
+  const { isAuthenticated, isLoading: isAdminSessionLoading, logout, user } = useAdminSession();
   const [pathname, setPathname] = useState(() =>
     typeof window === 'undefined' ? '/' : normalizePathname(window.location.pathname),
   );
@@ -72,7 +89,7 @@ export default function App() {
   const activeNews = route?.id === 'news-details'
     ? collections.news.find((item) => item.slug === params.slug) ?? null
     : null;
-  const currentRoute = activeTeam
+  const currentRoute = useMemo(() => activeTeam
     ? {
         ...route,
         label: activeTeam.name,
@@ -87,7 +104,21 @@ export default function App() {
           ...route,
           label: activeNews.headline,
         }
-      : route;
+    : route, [route, activeTeam, activePublication, activeNews]);
+  const isProtectedAdminRoute =
+    currentRoute?.id?.startsWith('admin-') && currentRoute.id !== 'admin-login';
+
+  useEffect(() => {
+    if (isProtectedAdminRoute && !isAdminSessionLoading && !isAuthenticated) {
+      replacePath('/admin/login');
+    }
+  }, [isAuthenticated, isAdminSessionLoading, isProtectedAdminRoute]);
+
+  useEffect(() => {
+    if (currentRoute?.id === 'admin-login' && !isAdminSessionLoading && isAuthenticated) {
+      replacePath('/admin');
+    }
+  }, [currentRoute?.id, isAuthenticated, isAdminSessionLoading]);
 
   useEffect(() => {
     const metadata = buildRouteMetadata({
@@ -134,6 +165,50 @@ export default function App() {
   const adminLoginPage = currentRoute?.id === 'admin-login'
     ? <AdminLoginPage onNavigate={handleNavigate} />
     : null;
+  const adminDashboardPage = currentRoute?.id === 'admin-dashboard'
+    ? <AdminDashboardPage />
+    : null;
+  const adminTeamsPage = currentRoute?.id === 'admin-teams'
+    ? <AdminTeamsPage onNavigate={handleNavigate} />
+    : null;
+  const adminMembersPage = currentRoute?.id === 'admin-members'
+    ? <AdminMembersPage onNavigate={handleNavigate} />
+    : null;
+  const adminProjectsPage = currentRoute?.id === 'admin-projects'
+    ? <AdminProjectsPage onNavigate={handleNavigate} />
+    : null;
+  const adminTeamCreatePage = currentRoute?.id === 'admin-team-create'
+    ? <AdminTeamFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminTeamEditPage = currentRoute?.id === 'admin-team-edit'
+    ? <AdminTeamFormPage mode="edit" onNavigate={handleNavigate} teamSlug={params.slug} />
+    : null;
+  const adminMemberCreatePage = currentRoute?.id === 'admin-member-create'
+    ? <AdminMemberFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminMemberEditPage = currentRoute?.id === 'admin-member-edit'
+    ? <AdminMemberFormPage mode="edit" onNavigate={handleNavigate} memberSlug={params.slug} />
+    : null;
+  const adminProjectCreatePage = currentRoute?.id === 'admin-project-create'
+    ? <AdminProjectFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminProjectEditPage = currentRoute?.id === 'admin-project-edit'
+    ? <AdminProjectFormPage mode="edit" onNavigate={handleNavigate} projectSlug={params.slug} />
+    : null;
+  const adminSectionPage = currentRoute?.id?.startsWith('admin-') &&
+    currentRoute.id !== 'admin-dashboard' &&
+    currentRoute.id !== 'admin-teams' &&
+    currentRoute.id !== 'admin-members' &&
+    currentRoute.id !== 'admin-projects' &&
+    currentRoute.id !== 'admin-team-create' &&
+    currentRoute.id !== 'admin-team-edit' &&
+    currentRoute.id !== 'admin-member-create' &&
+    currentRoute.id !== 'admin-member-edit' &&
+    currentRoute.id !== 'admin-project-create' &&
+    currentRoute.id !== 'admin-project-edit' &&
+    currentRoute.id !== 'admin-login'
+    ? <AdminSectionPage routeId={currentRoute.id} />
+    : null;
   const newsDetailsPage = currentRoute?.id === 'news-details'
     ? <NewsDetailsPage slug={params.slug} onNavigate={handleNavigate} />
     : null;
@@ -143,6 +218,46 @@ export default function App() {
   const teamDetailsPage = currentRoute?.id === 'team-details'
     ? <TeamDetailsPage slug={params.slug} onNavigate={handleNavigate} />
     : null;
+
+  if (currentRoute?.id === 'admin-login') {
+    return adminLoginPage;
+  }
+
+  if (isProtectedAdminRoute) {
+    return (
+      <AdminShell
+        currentRoute={currentRoute}
+        onNavigate={handleNavigate}
+        user={user}
+        onLogout={async () => {
+          await logout();
+          replacePath('/admin/login');
+        }}
+      >
+        {isAdminSessionLoading
+          ? (
+            <section className="admin-loading-state">
+              <p className="admin-section-kicker">Session Check</p>
+              <h3>Opening the protected workspace...</h3>
+              <p className="admin-body-copy">
+                We&apos;re validating your admin session before rendering the navigation shell.
+              </p>
+            </section>
+            )
+          : adminDashboardPage ??
+            adminTeamsPage ??
+            adminMembersPage ??
+            adminProjectsPage ??
+            adminTeamCreatePage ??
+            adminTeamEditPage ??
+            adminMemberCreatePage ??
+            adminMemberEditPage ??
+            adminProjectCreatePage ??
+            adminProjectEditPage ??
+            adminSectionPage}
+      </AdminShell>
+    );
+  }
 
   return (
     <PublicLayout currentRoute={currentRoute} onNavigate={handleNavigate}>

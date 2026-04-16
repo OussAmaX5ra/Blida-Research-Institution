@@ -1,7 +1,7 @@
 import { useDeferredValue, useState } from 'react';
 import { ArrowRight, BookOpen, FlaskConical, Layers3, Search, Sparkles, Users2, X } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const roleOrder = ['Professor', 'Doctor', 'PhD Student'];
 const roleGroupLabels = {

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const institutionalValues = [
   {

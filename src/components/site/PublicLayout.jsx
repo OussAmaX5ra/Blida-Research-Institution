@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   ChevronRight,
@@ -41,8 +41,14 @@ function NavLink({
 function PublicHeader({ currentRoute, onNavigate }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Close mobile menu when route changes
+  const prevRouteRef = useRef(currentRoute?.path);
   useEffect(() => {
-    setMobileOpen(false);
+    if (prevRouteRef.current !== currentRoute?.path) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMobileOpen(false);
+      prevRouteRef.current = currentRoute?.path;
+    }
   }, [currentRoute?.path]);
 
   return (

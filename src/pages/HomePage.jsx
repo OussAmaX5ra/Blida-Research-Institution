@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { faculty, labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const featuredFaculty = faculty.slice(0, 4);
 

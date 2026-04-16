@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { usePublicData } from '../providers/PublicDataProvider.jsx';
+import { usePublicData } from '../providers/usePublicData.js';
 
 const notes = [
   'News should reinforce that the lab is active, funded, visible, and institutionally credible.',

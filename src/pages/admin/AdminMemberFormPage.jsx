@@ -140,11 +140,13 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
       return;
     }
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     setValues(buildInitialValues(existingMember));
     setErrors({});
     setGlobalMessage('');
     setSlugTouched(Boolean(existingMember?.slug));
     setLocalToast(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [existingMember, mode]);
 
   useEffect(() => {

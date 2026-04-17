@@ -1,0 +1,405 @@
+import { useEffect, useMemo, useState } from 'react';
+
+const STORAGE_KEY = 'research-lab.admin-publication-drafts.v1';
+const STORAGE_EVENT = 'research-lab:admin-publication-drafts:change';
+const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
+const ALLOWED_ENTRY_TYPES = new Set(['article', 'inproceedings']);
+const ALLOWED_STATUSES = new Set(['Published', 'Review', 'Draft']);
+
+function canUseStorage() {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function parseList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeText(item)).filter(Boolean);
+  }
+
+  return String(value ?? '')
+    .split(/[\n,]/)
+    .map((item) => normalizeText(item))
+    .filter(Boolean);
+}
+
+export function slugifyPublicationTitle(value) {
+  return normalizeText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function findTeamForPublication(publication, teams) {
+  if (publication.team?.slug) {
+    return teams.find((team) => team.slug === publication.team.slug) ?? null;
+  }
+
+  if (publication.teamSlug) {
+    return teams.find((team) => team.slug === publication.teamSlug) ?? null;
+  }
+
+  if (publication.teamTag) {
+    return teams.find((team) => team.acronym === publication.teamTag) ?? null;
+  }
+
+  return null;
+}
+
+function readStoredPublications() {
+  if (!canUseStorage()) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredPublications(publications) {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(publications));
+  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
+}
+
+function toStoredPublicationRecord(publication, teams, { isLocalOnly = false } = {}) {
+  const team = findTeamForPublication(publication, teams);
+
+  return {
+    abstract: normalizeText(publication.abstract),
+    authors: parseList(publication.authors),
+    citations: Number(publication.citations) || 0,
+    createdAt: publication.createdAt ?? new Date().toISOString(),
+    doi: normalizeText(publication.doi),
+    entryType: normalizeText(publication.entryType) || 'article',
+    id: String(publication.id ?? publication.slug),
+    isLocalOnly,
+    journal: normalizeText(publication.journal),
+    pdfLink: normalizeText(publication.pdfLink),
+    publisher: normalizeText(publication.publisher),
+    slug: normalizeText(publication.slug),
+    status: normalizeText(publication.status) || 'Published',
+    teamSlug: publication.teamSlug ?? team?.slug ?? '',
+    themes: parseList(publication.themes),
+    title: normalizeText(publication.title),
+    updatedAt: publication.updatedAt ?? new Date().toISOString(),
+    year: Number(publication.year) || new Date().getFullYear(),
+  };
+}
+
+function ensureSeededPublications(sourcePublications) {
+  const storedPublications = readStoredPublications();
+
+  if (storedPublications?.length) {
+    return storedPublications;
+  }
+
+  if (!sourcePublications.length) {
+    return [];
+  }
+
+  const seededPublications = sourcePublications.map((publication) => publication);
+  writeStoredPublications(seededPublications);
+  return seededPublications;
+}
+
+function buildUniqueSlug(slug, publications, currentId) {
+  let nextSlug = slug;
+  let suffix = 2;
+
+  while (publications.some((publication) => publication.id !== currentId && publication.slug === nextSlug)) {
+    nextSlug = `${slug}-${suffix}`;
+    suffix += 1;
+  }
+
+  return nextSlug;
+}
+
+function isValidUrlLike(value) {
+  const normalized = normalizeText(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return normalized === '#' || /^(https?:\/\/|\/)/.test(normalized);
+}
+
+export function buildPublicationBibtex(publication) {
+  const citationKey = `${publication.slug.replace(/-/g, '_')}_${publication.year}`;
+  const authors = publication.authors.join(' and ');
+  const venueField = publication.entryType === 'article' ? 'journal' : 'booktitle';
+
+  return `@${publication.entryType}{${citationKey},
+  title = {${publication.title}},
+  author = {${authors}},
+  ${venueField} = {${publication.journal}},
+  year = {${publication.year}},
+  publisher = {${publication.publisher}},
+  doi = {${publication.doi}},
+  url = {${publication.pdfLink}}
+}`;
+}
+
+export function buildPublicationApaCitation(publication) {
+  return `${publication.authors.join(', ')} (${publication.year}). ${publication.title}. ${publication.publisher}. ${publication.doi}`;
+}
+
+export function validatePublicationDraft(values, publications, teams, currentId) {
+  const nextErrors = {};
+  const normalizedSlug = slugifyPublicationTitle(values.slug || values.title);
+  const authors = parseList(values.authors);
+  const themes = parseList(values.themes);
+  const normalizedYear = Number(values.year);
+  const normalizedCitations = Number(values.citations);
+  const selectedTeam = teams.find((team) => team.slug === values.teamSlug) ?? null;
+
+  if (!normalizeText(values.title)) {
+    nextErrors.title = 'Publication title is required.';
+  }
+
+  if (!normalizedSlug) {
+    nextErrors.slug = 'A valid slug is required.';
+  } else if (RESERVED_SLUGS.has(normalizedSlug)) {
+    nextErrors.slug = 'This slug is reserved by the routing system.';
+  } else if (publications.some((publication) => publication.id !== currentId && publication.slug === normalizedSlug)) {
+    nextErrors.slug = 'Another publication already uses this slug.';
+  }
+
+  if (!selectedTeam) {
+    nextErrors.teamSlug = 'Assign the publication to a team.';
+  }
+
+  if (!ALLOWED_STATUSES.has(normalizeText(values.status))) {
+    nextErrors.status = 'Choose Published, Review, or Draft.';
+  }
+
+  if (!ALLOWED_ENTRY_TYPES.has(normalizeText(values.entryType))) {
+    nextErrors.entryType = 'Choose article or inproceedings.';
+  }
+
+  if (!authors.length) {
+    nextErrors.authors = 'Add at least one author and keep the order intentional.';
+  }
+
+  if (!Number.isInteger(normalizedYear) || normalizedYear < 2000 || normalizedYear > 2100) {
+    nextErrors.year = 'Use a valid four-digit year.';
+  }
+
+  if (!normalizeText(values.publisher)) {
+    nextErrors.publisher = 'Publisher or venue group is required.';
+  }
+
+  if (!normalizeText(values.journal)) {
+    nextErrors.journal = 'Journal or conference label is required.';
+  }
+
+  if (!normalizeText(values.doi)) {
+    nextErrors.doi = 'DOI is required.';
+  }
+
+  if (!isValidUrlLike(values.pdfLink)) {
+    nextErrors.pdfLink = 'Use #, an absolute URL, or a root-relative file path.';
+  }
+
+  if (!normalizeText(values.abstract)) {
+    nextErrors.abstract = 'Abstract is required.';
+  } else if (normalizeText(values.abstract).length < 40) {
+    nextErrors.abstract = 'Use at least 40 characters so the abstract is useful.';
+  }
+
+  if (!themes.length) {
+    nextErrors.themes = 'Add at least one research theme.';
+  }
+
+  if (!Number.isInteger(normalizedCitations) || normalizedCitations < 0) {
+    nextErrors.citations = 'Citations must be zero or a positive whole number.';
+  }
+
+  return {
+    authors,
+    citations: normalizedCitations,
+    errors: nextErrors,
+    normalizedSlug,
+    selectedTeam,
+    themes,
+    year: normalizedYear,
+  };
+}
+
+function buildStoredPublicationFromForm(values, publications, teams, currentId = null) {
+  const validation = validatePublicationDraft(values, publications, teams, currentId);
+
+  if (Object.keys(validation.errors).length) {
+    return {
+      errors: validation.errors,
+      publication: null,
+    };
+  }
+
+  const existingPublication = currentId
+    ? publications.find((publication) => publication.id === currentId) ?? null
+    : null;
+
+  return {
+    errors: {},
+    publication: {
+      abstract: normalizeText(values.abstract),
+      authors: validation.authors,
+      citations: validation.citations,
+      createdAt: existingPublication?.createdAt ?? new Date().toISOString(),
+      doi: normalizeText(values.doi),
+      entryType: normalizeText(values.entryType),
+      id: currentId ?? `local-publication-${Date.now()}`,
+      isLocalOnly: existingPublication?.isLocalOnly ?? true,
+      journal: normalizeText(values.journal),
+      pdfLink: normalizeText(values.pdfLink),
+      publisher: normalizeText(values.publisher),
+      slug: buildUniqueSlug(validation.normalizedSlug, publications, currentId),
+      status: normalizeText(values.status),
+      teamSlug: validation.selectedTeam.slug,
+      themes: validation.themes,
+      title: normalizeText(values.title),
+      updatedAt: new Date().toISOString(),
+      year: validation.year,
+    },
+  };
+}
+
+export function createAdminPublicationDraft(values, publications, teams) {
+  const result = buildStoredPublicationFromForm(values, publications, teams);
+
+  if (!result.publication) {
+    return result;
+  }
+
+  const nextPublications = [result.publication, ...publications];
+  writeStoredPublications(nextPublications);
+
+  return {
+    errors: {},
+    publication: result.publication,
+    publications: nextPublications,
+  };
+}
+
+export function updateAdminPublicationDraft(publicationId, values, publications, teams) {
+  const result = buildStoredPublicationFromForm(values, publications, teams, publicationId);
+
+  if (!result.publication) {
+    return result;
+  }
+
+  const nextPublications = publications.map((publication) => (
+    publication.id === publicationId ? result.publication : publication
+  ));
+  writeStoredPublications(nextPublications);
+
+  return {
+    errors: {},
+    publication: result.publication,
+    publications: nextPublications,
+  };
+}
+
+export function deleteAdminPublicationDraft(publicationId, publications) {
+  const nextPublications = publications.filter((publication) => publication.id !== publicationId);
+  writeStoredPublications(nextPublications);
+  return nextPublications;
+}
+
+function enrichPublication(publication, teams) {
+  const team = teams.find((entry) => entry.slug === publication.teamSlug) ?? null;
+
+  return {
+    ...publication,
+    team,
+  };
+}
+
+export function useAdminPublicationDrafts(sourcePublications, teams) {
+  const normalizedSourcePublications = useMemo(
+    () =>
+      sourcePublications.map((publication) => toStoredPublicationRecord(publication, teams)),
+    [sourcePublications, teams],
+  );
+  const [publications, setPublications] = useState([]);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const syncPublications = () => {
+      const nextPublications = ensureSeededPublications(normalizedSourcePublications);
+      setPublications(nextPublications);
+      setIsReady(true);
+    };
+
+    syncPublications();
+
+    if (!canUseStorage()) {
+      return undefined;
+    }
+
+    window.addEventListener(STORAGE_EVENT, syncPublications);
+    window.addEventListener('storage', syncPublications);
+
+    return () => {
+      window.removeEventListener(STORAGE_EVENT, syncPublications);
+      window.removeEventListener('storage', syncPublications);
+    };
+  }, [normalizedSourcePublications]);
+
+  const enrichedPublications = useMemo(
+    () =>
+      publications
+        .map((publication) => enrichPublication(publication, teams))
+        .toSorted((left, right) => right.year - left.year || left.title.localeCompare(right.title)),
+    [publications, teams],
+  );
+
+  return {
+    isReady,
+    publications: enrichedPublications,
+    findPublicationBySlug(slug) {
+      return enrichedPublications.find((publication) => publication.slug === slug) ?? null;
+    },
+    createPublication(values) {
+      const result = createAdminPublicationDraft(values, publications, teams);
+
+      if (result.publications) {
+        setPublications(result.publications);
+      }
+
+      return result;
+    },
+    updatePublication(publicationId, values) {
+      const result = updateAdminPublicationDraft(publicationId, values, publications, teams);
+
+      if (result.publications) {
+        setPublications(result.publications);
+      }
+
+      return result;
+    },
+    deletePublication(publicationId) {
+      const nextPublications = deleteAdminPublicationDraft(publicationId, publications);
+      setPublications(nextPublications);
+      return nextPublications;
+    },
+  };
+}

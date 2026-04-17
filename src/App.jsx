@@ -6,6 +6,13 @@ import AboutPage from './pages/AboutPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminMemberFormPage from './pages/admin/AdminMemberFormPage.jsx';
 import AdminMembersPage from './pages/admin/AdminMembersPage.jsx';
+import AdminPublicationFormPage from './pages/admin/AdminPublicationFormPage.jsx';
+import AdminPublicationsPage from './pages/admin/AdminPublicationsPage.jsx';
+import AdminNewsFormPage from './pages/admin/AdminNewsFormPage.jsx';
+import AdminNewsPage from './pages/admin/AdminNewsPage.jsx';
+import AdminGalleryFormPage from './pages/admin/AdminGalleryFormPage.jsx';
+import AdminGalleryPage from './pages/admin/AdminGalleryPage.jsx';
+import AdminUsersPage from './pages/admin/AdminUsersPage.jsx';
 import AdminProjectFormPage from './pages/admin/AdminProjectFormPage.jsx';
 import AdminProjectsPage from './pages/admin/AdminProjectsPage.jsx';
 import AdminTeamFormPage from './pages/admin/AdminTeamFormPage.jsx';
@@ -177,6 +184,18 @@ export default function App() {
   const adminProjectsPage = currentRoute?.id === 'admin-projects'
     ? <AdminProjectsPage onNavigate={handleNavigate} />
     : null;
+  const adminPublicationsPage = currentRoute?.id === 'admin-publications'
+    ? <AdminPublicationsPage onNavigate={handleNavigate} />
+    : null;
+  const adminNewsPage = currentRoute?.id === 'admin-news'
+    ? <AdminNewsPage onNavigate={handleNavigate} />
+    : null;
+  const adminGalleryPage = currentRoute?.id === 'admin-gallery'
+    ? <AdminGalleryPage onNavigate={handleNavigate} />
+    : null;
+  const adminUsersPage = currentRoute?.id === 'admin-users'
+    ? <AdminUsersPage />
+    : null;
   const adminTeamCreatePage = currentRoute?.id === 'admin-team-create'
     ? <AdminTeamFormPage mode="create" onNavigate={handleNavigate} />
     : null;
@@ -195,17 +214,45 @@ export default function App() {
   const adminProjectEditPage = currentRoute?.id === 'admin-project-edit'
     ? <AdminProjectFormPage mode="edit" onNavigate={handleNavigate} projectSlug={params.slug} />
     : null;
+  const adminPublicationCreatePage = currentRoute?.id === 'admin-publication-create'
+    ? <AdminPublicationFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminPublicationEditPage = currentRoute?.id === 'admin-publication-edit'
+    ? <AdminPublicationFormPage mode="edit" onNavigate={handleNavigate} publicationSlug={params.slug} />
+    : null;
+  const adminNewsCreatePage = currentRoute?.id === 'admin-news-create'
+    ? <AdminNewsFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminNewsEditPage = currentRoute?.id === 'admin-news-edit'
+    ? <AdminNewsFormPage mode="edit" onNavigate={handleNavigate} newsSlug={params.slug} />
+    : null;
+  const adminGalleryCreatePage = currentRoute?.id === 'admin-gallery-create'
+    ? <AdminGalleryFormPage mode="create" onNavigate={handleNavigate} />
+    : null;
+  const adminGalleryEditPage = currentRoute?.id === 'admin-gallery-edit'
+    ? <AdminGalleryFormPage mode="edit" onNavigate={handleNavigate} gallerySlug={params.slug} />
+    : null;
   const adminSectionPage = currentRoute?.id?.startsWith('admin-') &&
     currentRoute.id !== 'admin-dashboard' &&
     currentRoute.id !== 'admin-teams' &&
     currentRoute.id !== 'admin-members' &&
     currentRoute.id !== 'admin-projects' &&
+    currentRoute.id !== 'admin-publications' &&
+    currentRoute.id !== 'admin-news' &&
+    currentRoute.id !== 'admin-gallery' &&
+    currentRoute.id !== 'admin-users' &&
     currentRoute.id !== 'admin-team-create' &&
     currentRoute.id !== 'admin-team-edit' &&
     currentRoute.id !== 'admin-member-create' &&
     currentRoute.id !== 'admin-member-edit' &&
     currentRoute.id !== 'admin-project-create' &&
     currentRoute.id !== 'admin-project-edit' &&
+    currentRoute.id !== 'admin-publication-create' &&
+    currentRoute.id !== 'admin-publication-edit' &&
+    currentRoute.id !== 'admin-news-create' &&
+    currentRoute.id !== 'admin-news-edit' &&
+    currentRoute.id !== 'admin-gallery-create' &&
+    currentRoute.id !== 'admin-gallery-edit' &&
     currentRoute.id !== 'admin-login'
     ? <AdminSectionPage routeId={currentRoute.id} />
     : null;
@@ -248,12 +295,22 @@ export default function App() {
             adminTeamsPage ??
             adminMembersPage ??
             adminProjectsPage ??
+            adminPublicationsPage ??
+            adminNewsPage ??
+            adminGalleryPage ??
+            adminUsersPage ??
             adminTeamCreatePage ??
             adminTeamEditPage ??
             adminMemberCreatePage ??
             adminMemberEditPage ??
             adminProjectCreatePage ??
             adminProjectEditPage ??
+            adminPublicationCreatePage ??
+            adminPublicationEditPage ??
+            adminNewsCreatePage ??
+            adminNewsEditPage ??
+            adminGalleryCreatePage ??
+            adminGalleryEditPage ??
             adminSectionPage}
       </AdminShell>
     );

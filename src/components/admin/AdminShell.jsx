@@ -65,6 +65,7 @@ export default function AdminShell({
       return undefined;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setToast(queuedToast);
 
     const timeoutId = window.setTimeout(() => {

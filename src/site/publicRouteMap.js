@@ -182,6 +182,22 @@ const publicPageHierarchy = [
         path: '/admin/publications',
         pageType: 'admin',
         navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-publication-create',
+            label: 'Create Publication',
+            path: '/admin/publications/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-publication-edit',
+            label: 'Edit Publication',
+            path: '/admin/publications/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
       },
       {
         id: 'admin-news',
@@ -189,6 +205,22 @@ const publicPageHierarchy = [
         path: '/admin/news',
         pageType: 'admin',
         navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-news-create',
+            label: 'Create News',
+            path: '/admin/news/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-news-edit',
+            label: 'Edit News',
+            path: '/admin/news/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
       },
       {
         id: 'admin-gallery',
@@ -196,6 +228,22 @@ const publicPageHierarchy = [
         path: '/admin/gallery',
         pageType: 'admin',
         navGroup: 'admin',
+        children: [
+          {
+            id: 'admin-gallery-create',
+            label: 'Create Gallery Item',
+            path: '/admin/gallery/new',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+          {
+            id: 'admin-gallery-edit',
+            label: 'Edit Gallery Item',
+            path: '/admin/gallery/:slug/edit',
+            pageType: 'admin',
+            navGroup: 'admin',
+          },
+        ],
       },
       {
         id: 'admin-users',

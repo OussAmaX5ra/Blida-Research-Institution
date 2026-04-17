@@ -168,11 +168,13 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
       return;
     }
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     setValues(buildInitialValues(existingProject));
     setErrors({});
     setGlobalMessage('');
     setSlugTouched(Boolean(existingProject?.slug));
     setLocalToast(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [existingProject, mode]);
 
   useEffect(() => {

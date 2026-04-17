@@ -132,11 +132,13 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
       return;
     }
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     setValues(buildInitialValues(existingTeam));
     setErrors({});
     setGlobalMessage('');
     setSlugTouched(Boolean(existingTeam?.slug));
     setLocalToast(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [existingTeam, mode]);
 
   useEffect(() => {

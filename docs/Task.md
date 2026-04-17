@@ -96,20 +96,20 @@ Create a secure management portal that allows authenticated admins to manage all
 - `[x]` Build the Project create form
 - `[x]` Build the Project edit form
 - `[x]` Build the Project delete workflow with confirmation
-- `[ ]` Build the Publications management list view
-- `[ ]` Build the Publication create form
-- `[ ]` Build the Publication edit form
-- `[ ]` Build the Publication delete workflow with confirmation
-- `[ ]` Build the News management list view
-- `[ ]` Build the News create form
-- `[ ]` Build the News edit form
-- `[ ]` Build the News delete workflow with confirmation
-- `[ ]` Build the Gallery management list view
-- `[ ]` Build the Gallery create form
-- `[ ]` Build the Gallery edit form
-- `[ ]` Build the Gallery delete workflow with confirmation
-- `[ ]` Build the User management interface
-- `[ ]` Implement user activation, deactivation, role assignment, and password reset workflows
+- `[x]` Build the Publications management list view
+- `[x]` Build the Publication create form
+- `[x]` Build the Publication edit form
+- `[x]` Build the Publication delete workflow with confirmation
+- `[x]` Build the News management list view
+- `[x]` Build the News create form
+- `[x]` Build the News edit form
+- `[x]` Build the News delete workflow with confirmation
+- `[x]` Build the Gallery management list view
+- `[x]` Build the Gallery create form
+- `[x]` Build the Gallery edit form
+- `[x]` Build the Gallery delete workflow with confirmation
+- `[x]` Build the User management interface
+- `[x]` Implement user activation, deactivation, role assignment, and password reset workflows
 - `[ ]` Implement admin activity logging for important actions
 - `[ ]` Implement client-side and server-side validation across all admin forms
 - `[ ]` Connect admin team , member , project , publication , news and gallery CRUD to the public data source so newly created or updated records appear on the public site

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminMemberDrafts } from '../../lib/admin-member-drafts.js';
 import { useAdminProjectDrafts } from '../../lib/admin-project-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
@@ -278,8 +279,9 @@ export default function AdminProjectsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { isReady: areMembersReady, members } = useAdminMemberDrafts(sourceMembers, teams);
   const { deleteProject, isReady, projects } = useAdminProjectDrafts(sourceProjects, teams, members);
   const [pendingDeleteProject, setPendingDeleteProject] = useState(null);
@@ -353,12 +355,12 @@ export default function AdminProjectsPage({ onNavigate }) {
     return <AdminProjectsErrorState error={error} onRetry={retry} />;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeleteProject || deleteConfirmation !== pendingDeleteProject.slug) {
       return;
     }
 
-    deleteProject(pendingDeleteProject.id);
+    await deleteProject(pendingDeleteProject.id);
     setPendingDeleteProject(null);
     setDeleteConfirmation('');
   }

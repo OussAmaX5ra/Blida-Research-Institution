@@ -1,12 +1,9 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { GraduationCap, BookMarked } from 'lucide-react';
-import { faculty, teams } from '../data/mockData';
+import { usePublicData } from '../providers/usePublicData';
 
-// Build a Map for O(1) team color lookups (js-index-maps)
-const teamColorMap = new Map(teams.map(t => [t.acronym, t.color]));
-
-const MemberCard = memo(function MemberCard({ member }) {
-  const color = teamColorMap.get(member.team) ?? '#6b7280';
+const MemberCard = memo(function MemberCard({ member, teamColorMap }) {
+  const color = teamColorMap.get(member.team?.acronym) ?? member.team?.color ?? '#6b7280';
 
   return (
     <article
@@ -32,7 +29,7 @@ const MemberCard = memo(function MemberCard({ member }) {
       {/* Team badge */}
       <span className="text-xs font-bold tracking-widest uppercase px-2 py-0.5 rounded-full mb-3"
             style={{ background: `${color}18`, color }}>
-        {member.team}
+        {member.team?.acronym ?? ''}
       </span>
 
       {/* Expertise */}
@@ -46,8 +43,25 @@ const MemberCard = memo(function MemberCard({ member }) {
 });
 
 export default function Members() {
-  const professors = faculty.filter(f => f.title.startsWith('Prof'));
-  const researchers = faculty.filter(f => !f.title.startsWith('Prof'));
+  const { collections } = usePublicData();
+  const allMembers = collections?.members ?? [];
+  const teams = collections?.teams ?? [];
+
+  const teamColorMap = useMemo(
+    () => new Map(teams.map(t => [t.acronym, t.color])),
+    [teams],
+  );
+
+  // Filter to show only faculty (Professors and Doctors) on the homepage section
+  const professors = useMemo(
+    () => allMembers.filter(m => m.role === 'Professor'),
+    [allMembers],
+  );
+
+  const researchers = useMemo(
+    () => allMembers.filter(m => m.role === 'Doctor'),
+    [allMembers],
+  );
 
   return (
     <section id="members" className="py-24 px-6" style={{ background: 'var(--color-surface)' }}>
@@ -69,32 +83,36 @@ export default function Members() {
         </div>
 
         {/* Professors */}
-        <div className="mb-12">
-          <div className="flex items-center gap-2 mb-6">
-            <GraduationCap size={16} style={{ color: 'var(--color-teal)' }} />
-            <h3 className="text-sm font-semibold uppercase tracking-widest" style={{ color: 'var(--color-teal)' }}>
-              Professors
-            </h3>
-            <div className="flex-1 h-px ml-2" style={{ background: 'var(--color-surface-alt)' }} />
+        {professors.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <GraduationCap size={16} style={{ color: 'var(--color-teal)' }} />
+              <h3 className="text-sm font-semibold uppercase tracking-widest" style={{ color: 'var(--color-teal)' }}>
+                Professors
+              </h3>
+              <div className="flex-1 h-px ml-2" style={{ background: 'var(--color-surface-alt)' }} />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {professors.map(m => <MemberCard key={m.slug || m.name} member={m} teamColorMap={teamColorMap} />)}
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {professors.map(m => <MemberCard key={m.name} member={m} />)}
-          </div>
-        </div>
+        )}
 
         {/* Researchers / Doctors */}
-        <div>
-          <div className="flex items-center gap-2 mb-6">
-            <BookMarked size={16} style={{ color: 'var(--color-gold-dark)' }} />
-            <h3 className="text-sm font-semibold uppercase tracking-widest" style={{ color: 'var(--color-gold-dark)' }}>
-              Researchers
-            </h3>
-            <div className="flex-1 h-px ml-2" style={{ background: 'var(--color-surface-alt)' }} />
+        {researchers.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <BookMarked size={16} style={{ color: 'var(--color-gold-dark)' }} />
+              <h3 className="text-sm font-semibold uppercase tracking-widest" style={{ color: 'var(--color-gold-dark)' }}>
+                Researchers
+              </h3>
+              <div className="flex-1 h-px ml-2" style={{ background: 'var(--color-surface-alt)' }} />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {researchers.map(m => <MemberCard key={m.slug || m.name} member={m} teamColorMap={teamColorMap} />)}
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {researchers.map(m => <MemberCard key={m.name} member={m} />)}
-          </div>
-        </div>
+        )}
       </div>
     </section>
   );

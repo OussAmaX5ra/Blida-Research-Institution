@@ -16,6 +16,7 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import { useAdminNewsDrafts } from '../../lib/admin-news-drafts.js';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
@@ -331,8 +332,9 @@ export default function AdminNewsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteNews, isReady, news } = useAdminNewsDrafts(sourceNews, teams);
   const [pendingDeleteNews, setPendingDeleteNews] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -416,12 +418,12 @@ export default function AdminNewsPage({ onNavigate }) {
     return <AdminNewsErrorState error={error} onRetry={retry} />;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeleteNews || deleteConfirmation !== pendingDeleteNews.slug) {
       return;
     }
 
-    deleteNews(pendingDeleteNews.id);
+    await deleteNews(pendingDeleteNews.id);
     setPendingDeleteNews(null);
     setDeleteConfirmation('');
   }

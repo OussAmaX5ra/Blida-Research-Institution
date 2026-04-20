@@ -7,7 +7,6 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { researchAxes } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
 import { usePublicData } from '../providers/usePublicData.js';
 
@@ -63,7 +62,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
 
 function TeamCard({ team, members, projects, publications, onNavigate }) {
   const relatedAxis = researchAxes.find((axis) => axis.id === team.axisId);
-  const relatedMembers = members.filter((member) => member.team.slug === team.slug);
+  const relatedMembers = members.filter((member) => member.team?.slug === team.slug);
   const relatedProjects = projects.filter((project) => project.team?.slug === team.slug);
   const relatedPublications = publications.filter((publication) => publication.team?.acronym === team.acronym);
   const roleCounts = [
@@ -256,7 +255,9 @@ export default function TeamsPage({ onNavigate }) {
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
+  const researchAxes = siteContext.researchAxes ?? [];
 
   if (!hasLoaded && isLoading) {
     return (
@@ -563,7 +564,7 @@ export default function TeamsPage({ onNavigate }) {
                 icon: Sparkles,
                 label: 'Team Details',
                 value: 'Each team card already points to a dedicated detail route for the next build step.',
-                href: `/teams/${teams[0].slug}`,
+                href: `/teams/${teams[0]?.slug ?? ''}`,
               },
             ].map((item) => (
               <a

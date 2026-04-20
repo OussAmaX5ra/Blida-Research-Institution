@@ -25,4 +25,6 @@ This folder contains the planning and implementation documents for the Blida Res
 - The backend lives under `server/`.
 - Shared runtime-safe mock data now lives under `shared/`.
 - Public pages are driven by the backend public API, but that API is still backed by shared mock data rather than database collections.
-- The admin authentication backend is implemented, but the admin portal UI and CRUD workflows are still pending.
+- The admin authentication backend is implemented and the admin portal UI now supports browser-backed CRUD workflows for teams, members, projects, publications, news, gallery, users, and activity review.
+- Admin form submissions now run both client-side validation and protected server-side validation before saving.
+- Admin CRUD changes are bridged back into the frontend public data provider so public pages reflect newly created, updated, and deleted records immediately within the current architecture.

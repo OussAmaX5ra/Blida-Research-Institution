@@ -8,17 +8,22 @@ import {
   Mail,
   KeyRound,
 } from 'lucide-react';
-import { contactInfo, labInfo } from '../data/mockData';
+import { recordAdminActivity } from '../lib/admin-activity-log.js';
+import { fallbackContactInfo, fallbackLabInfo } from '../lib/site-context.js';
 import { loginAdmin } from '../lib/admin-auth-api.js';
 import { useAdminSession } from '../providers/useAdminSession.js';
+import { usePublicData } from '../providers/usePublicData.js';
 
 export default function AdminLoginPage({ onNavigate }) {
   const { completeLogin, isAuthenticated } = useAdminSession();
+  const { siteContext } = usePublicData();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState(null);
+  const contactInfo = siteContext.contactInfo ?? fallbackContactInfo;
+  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -33,6 +38,17 @@ export default function AdminLoginPage({ onNavigate }) {
       onNavigate(event, '/admin');
     } catch (error) {
       setAuthenticatedUser(null);
+      recordAdminActivity({
+        action: 'auth.login_failed',
+        actor: {
+          email: email.trim().toLowerCase(),
+          fullName: 'Unauthenticated session',
+          id: 'anonymous',
+          role: 'anonymous',
+        },
+        entityType: 'system',
+        summary: `A protected login attempt failed for ${email.trim().toLowerCase() || 'an unknown email address'}.`,
+      });
       setErrorMessage(
         error instanceof Error
           ? error.message

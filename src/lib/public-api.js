@@ -1,4 +1,5 @@
 const publicEndpoints = {
+  siteContext: '/api/site-context',
   teams: '/api/teams',
   members: '/api/members',
   projects: '/api/projects',
@@ -6,6 +7,16 @@ const publicEndpoints = {
   news: '/api/news',
   gallery: '/api/gallery',
 };
+
+export const PUBLIC_DATA_INVALIDATED_EVENT = 'research-lab:public-data-invalidated';
+
+export function notifyPublicDataInvalidated() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(PUBLIC_DATA_INVALIDATED_EVENT));
+}
 
 async function requestJson(path, signal) {
   const response = await fetch(path, {

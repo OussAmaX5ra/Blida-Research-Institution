@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'research-lab.admin-member-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-member-drafts:change';
+import {
+  createAdminContentItem,
+  deleteAdminContentItem,
+  fetchAdminContentCollection,
+  mapAdminApiError,
+  updateAdminContentItem,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
+
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
 const ALLOWED_ROLES = new Set(['Professor', 'Doctor', 'PhD Student']);
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -33,34 +36,6 @@ export function slugifyMemberName(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function readStoredMembers() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredMembers(members) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
 function toStoredMemberRecord(member) {
   return {
     avatar: normalizeText(member.avatar) || normalizeText(member.name).slice(0, 2).toUpperCase(),
@@ -80,22 +55,6 @@ function toStoredMemberRecord(member) {
     title: normalizeText(member.title ?? member.academicTitle),
     updatedAt: member.updatedAt ?? new Date().toISOString(),
   };
-}
-
-function ensureSeededMembers(sourceMembers) {
-  const storedMembers = readStoredMembers();
-
-  if (storedMembers?.length) {
-    return storedMembers;
-  }
-
-  if (!sourceMembers.length) {
-    return [];
-  }
-
-  const seededMembers = sourceMembers.map((member) => toStoredMemberRecord(member));
-  writeStoredMembers(seededMembers);
-  return seededMembers;
 }
 
 function buildUniqueSlug(slug, members, currentId) {
@@ -183,82 +142,54 @@ export function validateMemberDraft(values, members, currentId) {
   };
 }
 
-function buildStoredMemberFromForm(values, members, currentId = null) {
+function buildStoredMemberFromForm(values, members, currentId = null, existingMember = null) {
   const { errors, normalizedSlug, teamSlugs, themes } = validateMemberDraft(values, members, currentId);
 
   if (Object.keys(errors).length) {
     return {
       errors,
-      member: null,
+      payload: null,
+      preview: null,
     };
   }
 
-  const existingMember = currentId ? members.find((member) => member.id === currentId) ?? null : null;
-  const nextId = currentId ?? `local-member-${Date.now()}`;
+  const preview = {
+    avatar: normalizeText(values.avatar).toUpperCase() || buildInitialAvatar(values.name),
+    createdAt: existingMember?.createdAt ?? new Date().toISOString(),
+    email: normalizeText(values.email),
+    expertise: normalizeText(values.expertise),
+    id: currentId ?? existingMember?.id ?? '',
+    isLeader: existingMember?.isLeader ?? false,
+    name: normalizeText(values.name),
+    primaryTeamSlug: values.primaryTeamSlug && teamSlugs.includes(values.primaryTeamSlug)
+      ? values.primaryTeamSlug
+      : teamSlugs[0],
+    projectCount: existingMember?.projectCount ?? 0,
+    publicationCount: existingMember?.publicationCount ?? 0,
+    role: normalizeText(values.role),
+    slug: buildUniqueSlug(normalizedSlug, members, currentId),
+    teamSlugs,
+    themes,
+    title: normalizeText(values.title),
+    updatedAt: new Date().toISOString(),
+  };
 
   return {
     errors: {},
-    member: {
-      avatar: normalizeText(values.avatar).toUpperCase() || buildInitialAvatar(values.name),
-      createdAt: existingMember?.createdAt ?? new Date().toISOString(),
-      email: normalizeText(values.email),
-      expertise: normalizeText(values.expertise),
-      id: nextId,
-      isLeader: existingMember?.isLeader ?? false,
-      name: normalizeText(values.name),
-      primaryTeamSlug: values.primaryTeamSlug && teamSlugs.includes(values.primaryTeamSlug)
-        ? values.primaryTeamSlug
-        : teamSlugs[0],
-      projectCount: existingMember?.projectCount ?? 0,
-      publicationCount: existingMember?.publicationCount ?? 0,
-      role: normalizeText(values.role),
-      slug: buildUniqueSlug(normalizedSlug, members, currentId),
-      teamSlugs,
-      themes,
-      title: normalizeText(values.title),
-      updatedAt: new Date().toISOString(),
+    payload: {
+      avatar: preview.avatar,
+      email: preview.email,
+      expertise: preview.expertise,
+      name: preview.name,
+      primaryTeamSlug: preview.primaryTeamSlug,
+      role: preview.role,
+      slug: preview.slug,
+      teamSlugs: preview.teamSlugs,
+      themes: preview.themes,
+      title: preview.title,
     },
+    preview,
   };
-}
-
-export function createAdminMemberDraft(values, members) {
-  const result = buildStoredMemberFromForm(values, members);
-
-  if (!result.member) {
-    return result;
-  }
-
-  const nextMembers = [result.member, ...members];
-  writeStoredMembers(nextMembers);
-
-  return {
-    errors: {},
-    member: result.member,
-    members: nextMembers,
-  };
-}
-
-export function updateAdminMemberDraft(memberId, values, members) {
-  const result = buildStoredMemberFromForm(values, members, memberId);
-
-  if (!result.member) {
-    return result;
-  }
-
-  const nextMembers = members.map((member) => (member.id === memberId ? result.member : member));
-  writeStoredMembers(nextMembers);
-
-  return {
-    errors: {},
-    member: result.member,
-    members: nextMembers,
-  };
-}
-
-export function deleteAdminMemberDraft(memberId, members) {
-  const nextMembers = members.filter((member) => member.id !== memberId);
-  writeStoredMembers(nextMembers);
-  return nextMembers;
 }
 
 function enrichMember(member, teams) {
@@ -279,28 +210,38 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
     () => sourceMembers.map((member) => toStoredMemberRecord(member)),
     [sourceMembers],
   );
-  const [members, setMembers] = useState([]);
+  const [members, setMembers] = useState(normalizedSourceMembers);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const syncMembers = () => {
-      const nextMembers = ensureSeededMembers(normalizedSourceMembers);
-      setMembers(nextMembers);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncMembers();
+    async function loadMembers() {
+      try {
+        const records = await fetchAdminContentCollection('member', abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setMembers(records.map((member) => toStoredMemberRecord(member)));
+      } catch {
+        if (!isCancelled) {
+          setMembers(normalizedSourceMembers);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncMembers);
-    window.addEventListener('storage', syncMembers);
+    loadMembers();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncMembers);
-      window.removeEventListener('storage', syncMembers);
+      isCancelled = true;
+      abortController.abort();
     };
   }, [normalizedSourceMembers]);
 
@@ -318,28 +259,110 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
     findMemberBySlug(slug) {
       return enrichedMembers.find((member) => member.slug === slug) ?? null;
     },
-    createMember(values) {
-      const result = createAdminMemberDraft(values, members);
+    async createMember(values) {
+      const result = buildStoredMemberFromForm(values, members);
 
-      if (result.members) {
-        setMembers(result.members);
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
-    },
-    updateMember(memberId, values) {
-      const result = updateAdminMemberDraft(memberId, values, members);
+      try {
+        const savedMember = await createAdminContentItem('member', result.payload);
+        const normalizedMember = toStoredMemberRecord(savedMember);
+        const nextMembers = [normalizedMember, ...members];
+        setMembers(nextMembers);
+        recordAdminActivity({
+          action: 'member.create',
+          afterSnapshot: normalizedMember,
+          entityId: normalizedMember.id,
+          entityLabel: normalizedMember.name,
+          entityType: 'member',
+          summary: `${normalizedMember.name} was added to the protected member directory.`,
+        });
 
-      if (result.members) {
-        setMembers(result.members);
+        return {
+          errors: {},
+          member: enrichMember(normalizedMember, teams),
+          members: nextMembers,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The member could not be created.');
+        return {
+          errors: apiError.errors,
+          member: null,
+          message: apiError.message,
+        };
+      }
+    },
+    async updateMember(memberId, values) {
+      const previousMember = members.find((member) => member.id === memberId) ?? null;
+      const result = buildStoredMemberFromForm(values, members, memberId, previousMember);
+
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
+      try {
+        const savedMember = await updateAdminContentItem('member', memberId, result.payload);
+        const normalizedMember = toStoredMemberRecord(savedMember);
+        const nextMembers = members.map((member) => (member.id === memberId ? normalizedMember : member));
+        setMembers(nextMembers);
+        recordAdminActivity({
+          action: 'member.update',
+          afterSnapshot: normalizedMember,
+          beforeSnapshot: previousMember,
+          entityId: normalizedMember.id,
+          entityLabel: normalizedMember.name,
+          entityType: 'member',
+          summary: `${normalizedMember.name} was updated in the protected member directory.`,
+        });
+
+        return {
+          errors: {},
+          member: enrichMember(normalizedMember, teams),
+          members: nextMembers,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The member could not be updated.');
+        return {
+          errors: apiError.errors,
+          member: null,
+          message: apiError.message,
+        };
+      }
     },
-    deleteMember(memberId) {
-      const nextMembers = deleteAdminMemberDraft(memberId, members);
-      setMembers(nextMembers);
-      return nextMembers;
+    async deleteMember(memberId) {
+      const previousMember = members.find((member) => member.id === memberId) ?? null;
+
+      try {
+        await deleteAdminContentItem('member', memberId);
+        const nextMembers = members.filter((member) => member.id !== memberId);
+        setMembers(nextMembers);
+
+        if (previousMember) {
+          recordAdminActivity({
+            action: 'member.delete',
+            beforeSnapshot: previousMember,
+            entityId: previousMember.id,
+            entityLabel: previousMember.name,
+            entityType: 'member',
+            summary: `${previousMember.name} was removed from the protected member directory.`,
+          });
+        }
+
+        return {
+          error: '',
+          members: nextMembers,
+        };
+      } catch (error) {
+        return {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected member could not be deleted.',
+          members,
+        };
+      }
     },
   };
 }

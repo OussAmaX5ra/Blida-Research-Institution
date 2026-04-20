@@ -19,6 +19,7 @@ import {
   buildPublicationApaCitation,
   useAdminPublicationDrafts,
 } from '../../lib/admin-publication-drafts.js';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
@@ -377,8 +378,9 @@ export default function AdminPublicationsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deletePublication, isReady, publications } = useAdminPublicationDrafts(
     sourcePublications,
     teams,
@@ -503,12 +505,12 @@ export default function AdminPublicationsPage({ onNavigate }) {
     return <AdminPublicationsErrorState error={error} onRetry={retry} />;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeletePublication || deleteConfirmation !== pendingDeletePublication.slug) {
       return;
     }
 
-    deletePublication(pendingDeletePublication.id);
+    await deletePublication(pendingDeletePublication.id);
     setPendingDeletePublication(null);
     setDeleteConfirmation('');
   }

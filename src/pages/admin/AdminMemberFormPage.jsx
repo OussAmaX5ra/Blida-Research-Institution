@@ -3,6 +3,7 @@ import { ArrowLeft, Layers3, Save, ShieldAlert, Sparkles, Trash2, Users2 } from 
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import AdminToast from '../../components/admin/AdminToast.jsx';
+import { validateAdminFormOnServer } from '../../lib/admin-form-validation-api.js';
 import {
   slugifyMemberName,
   useAdminMemberDrafts,
@@ -243,7 +244,7 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
     updateField('teamSlugs', nextSlugs);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validation = validateMemberDraft(values, members, existingMember?.id ?? null);
 
@@ -256,6 +257,19 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
         message: mode === 'create'
           ? 'The member could not be created yet. Review the highlighted fields and try again.'
           : 'The member could not be saved yet. Review the highlighted fields and try again.',
+      });
+      return;
+    }
+
+    const serverValidation = await validateAdminFormOnServer('member', values);
+
+    if (Object.keys(serverValidation.errors ?? {}).length) {
+      setErrors(serverValidation.errors);
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this member draft.');
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Member not created' : 'Member not saved',
+        message: 'Protected validation rejected the current member values. Review the highlighted fields and try again.',
       });
       return;
     }

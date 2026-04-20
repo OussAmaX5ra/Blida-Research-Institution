@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminMemberDrafts } from '../../lib/admin-member-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { usePublicData } from '../../providers/usePublicData.js';
@@ -278,8 +279,9 @@ export default function AdminMembersPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteMember, isReady, members } = useAdminMemberDrafts(sourceMembers, teams);
   const [pendingDeleteMember, setPendingDeleteMember] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -365,12 +367,12 @@ export default function AdminMembersPage({ onNavigate }) {
     return <AdminMembersErrorState error={error} onRetry={retry} />;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeleteMember || deleteConfirmation !== pendingDeleteMember.slug) {
       return;
     }
 
-    deleteMember(pendingDeleteMember.id);
+    await deleteMember(pendingDeleteMember.id);
     setPendingDeleteMember(null);
     setDeleteConfirmation('');
   }

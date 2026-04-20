@@ -14,6 +14,8 @@ import {
   securityHeadersMiddleware,
 } from "./middleware/security.js";
 import { authRouter } from "./modules/auth/auth-routes.js";
+import { adminContentRouter } from "./modules/admin-content/admin-content-routes.js";
+import { validationRouter } from "./modules/admin-validation/admin-validation-routes.js";
 import { publicRouter } from "./modules/public/public-routes.js";
 
 export function createApp() {
@@ -46,6 +48,8 @@ export function createApp() {
   app.use("/api/admin/auth", authRouteRateLimiter);
   app.use("/api/admin/auth/login", loginEmailRateLimiter);
   app.use("/api/admin/auth", authRouter);
+  app.use("/api/admin/validation", validationRouter);
+  app.use("/api/admin/content", adminContentRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

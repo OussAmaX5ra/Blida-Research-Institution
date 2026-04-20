@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, memo, useMemo } from 'react';
 import { GraduationCap, BookOpen, FlaskConical, FileText, Award, Clock, CheckCircle2, Circle, Loader } from 'lucide-react';
-import { teams } from '../data/mockData';
+import { usePublicData } from '../providers/usePublicData';
 
 // Module-level static data (rendering-hoist-jsx pattern)
 const phdStudents = [
@@ -74,7 +74,7 @@ const phdStudents = [
   },
 ];
 
-const teamColorMap = new Map(teams.map(t => [t.acronym, t.color]));
+const defaultTeamColors = new Map([['ISAI', '#1a5c6b'], ['BIG', '#7c4d8a'], ['HCI', '#b85c38'], ['DEC', '#2d6a4f']]);
 
 const statusConfig = {
   done:    { icon: CheckCircle2, label: 'Completed', color: '#2d6a4f', bg: 'rgba(45,106,79,0.1)',  border: 'rgba(45,106,79,0.3)' },
@@ -113,9 +113,9 @@ function ProgressBar({ progress, color }) {
 }
 
 // Individual PhD card
-const PhDCard = memo(function PhDCard({ student }) {
+const PhDCard = memo(function PhDCard({ student, teamColorMap }) {
   const [expanded, setExpanded] = useState(false);
-  const color = teamColorMap.get(student.team) ?? '#6b7280';
+  const color = teamColorMap.get(student.team) ?? defaultTeamColors.get(student.team) ?? '#6b7280';
 
   const progress = useMemo(() => {
     const done  = student.phases.filter(p => p.status === 'done').length;
@@ -250,6 +250,10 @@ const PhDCard = memo(function PhDCard({ student }) {
 });
 
 export default function PhDTracker() {
+  const { collections } = usePublicData();
+  const teams = collections?.teams ?? [];
+  const teamColorMap = useMemo(() => new Map(teams.map(t => [t.acronym, t.color])), [teams]);
+
   return (
     <section id="phd-tracker" className="py-24 px-6" style={{ background: 'var(--color-ink)' }}>
       <div className="max-w-7xl mx-auto">
@@ -285,7 +289,7 @@ export default function PhDTracker() {
         {/* Cards grid */}
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {phdStudents.map(student => (
-            <PhDCard key={student.id} student={student} />
+            <PhDCard key={student.id} student={student} teamColorMap={teamColorMap} />
           ))}
         </div>
 

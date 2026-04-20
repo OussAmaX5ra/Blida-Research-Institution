@@ -1,22 +1,19 @@
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { Search, ExternalLink, Quote, Copy, Check, Filter } from 'lucide-react';
-import { publications, teams } from '../data/mockData';
-
-// Derive tag list once at module level (rerender-derived-state-no-effect)
-const ALL_TAGS = ['All', ...teams.map(t => t.acronym)];
+import { usePublicData } from '../providers/usePublicData';
 
 function generateBibTeX(pub) {
-  const key = `${pub.authors[0].split('.').pop().trim()}${pub.year}`;
+  const key = `${(pub.authors?.[0] ?? '').split('.').pop().trim()}${pub.year}`;
   return `@article{${key},
   title     = {${pub.title}},
-  author    = {${pub.authors.join(' and ')}},
+  author    = {${(pub.authors ?? []).join(' and ')}},
   journal   = {${pub.journal}},
   year      = {${pub.year}}
 }`;
 }
 
 function generateAPA(pub) {
-  const authorsStr = pub.authors.join(', ');
+  const authorsStr = (pub.authors ?? []).join(', ');
   return `${authorsStr} (${pub.year}). ${pub.title}. ${pub.journal}.`;
 }
 
@@ -107,7 +104,7 @@ function PublicationCard({ pub, onCite }) {
 
       {/* Authors */}
       <p className="text-xs mb-2" style={{ color: 'var(--color-muted)' }}>
-        {pub.authors.join(', ')}
+        {(pub.authors ?? []).join(', ')}
       </p>
 
       {/* Journal */}
@@ -146,6 +143,15 @@ function PublicationCard({ pub, onCite }) {
 }
 
 export default function Publications() {
+  const { collections } = usePublicData();
+  const publications = collections?.publications ?? [];
+  const teams = collections?.teams ?? [];
+
+  const allTags = useMemo(
+    () => ['All', ...teams.map(t => t.acronym)],
+    [teams],
+  );
+
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [citingPub, setCitingPub] = useState(null);
@@ -160,10 +166,10 @@ export default function Publications() {
     const q = query.toLowerCase();
     return publications.filter(p => {
       const matchTag = activeTag === 'All' || p.teamTag === activeTag;
-      const matchQuery = !q || p.title.toLowerCase().includes(q) || p.authors.some(a => a.toLowerCase().includes(q)) || p.journal.toLowerCase().includes(q);
+      const matchQuery = !q || p.title.toLowerCase().includes(q) || (p.authors ?? []).some(a => a.toLowerCase().includes(q)) || p.journal.toLowerCase().includes(q);
       return matchTag && matchQuery;
     });
-  }, [query, activeTag]);
+  }, [query, activeTag, publications]);
 
   return (
     <section id="publications" className="py-24 px-6" style={{ background: 'var(--color-surface-alt)' }}>
@@ -205,7 +211,7 @@ export default function Publications() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <Filter size={14} style={{ color: 'var(--color-muted)' }} />
-            {ALL_TAGS.map(tag => (
+            {allTags.map(tag => (
               <button key={tag}
                       onClick={() => setActiveTag(tag)}
                       className="px-3 py-1.5 text-xs font-semibold rounded-full uppercase tracking-wide transition-all duration-200"
@@ -224,7 +230,7 @@ export default function Publications() {
         {/* Cards grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(pub => (
-            <PublicationCard key={pub.id} pub={pub} onCite={setCitingPub} />
+            <PublicationCard key={pub.id || pub.slug} pub={pub} onCite={setCitingPub} />
           ))}
           {filtered.length === 0 && (
             <div className="col-span-3 text-center py-16" style={{ color: 'var(--color-muted)' }}>

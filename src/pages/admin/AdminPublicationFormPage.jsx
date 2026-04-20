@@ -13,6 +13,7 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import AdminToast from '../../components/admin/AdminToast.jsx';
+import { validateAdminFormOnServer } from '../../lib/admin-form-validation-api.js';
 import {
   buildPublicationApaCitation,
   buildPublicationBibtex,
@@ -306,7 +307,7 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validation = validatePublicationDraft(values, publications, teams, existingPublication?.id ?? null);
 
@@ -319,6 +320,19 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
         message: mode === 'create'
           ? 'The publication could not be created yet. Review the highlighted fields and try again.'
           : 'The publication could not be saved yet. Review the highlighted fields and try again.',
+      });
+      return;
+    }
+
+    const serverValidation = await validateAdminFormOnServer('publication', values);
+
+    if (Object.keys(serverValidation.errors ?? {}).length) {
+      setErrors(serverValidation.errors);
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this publication draft.');
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Publication not created' : 'Publication not saved',
+        message: 'Protected validation rejected the current publication values. Review the highlighted fields and try again.',
       });
       return;
     }

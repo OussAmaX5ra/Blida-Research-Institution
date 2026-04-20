@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
@@ -312,8 +313,9 @@ export default function AdminTeamsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { deleteTeam, isReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { deleteTeam, isReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const [pendingDeleteTeam, setPendingDeleteTeam] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -421,12 +423,12 @@ export default function AdminTeamsPage({ onNavigate }) {
   const totalResearchers = teamRows.reduce((sum, row) => sum + row.memberCount, 0);
   const totalProjects = teamRows.reduce((sum, row) => sum + row.projectCount, 0);
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeleteTeam || deleteConfirmation !== pendingDeleteTeam.slug) {
       return;
     }
 
-    deleteTeam(pendingDeleteTeam.id);
+    await deleteTeam(pendingDeleteTeam.id);
     setPendingDeleteTeam(null);
     setDeleteConfirmation('');
   }

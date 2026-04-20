@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'research-lab.admin-gallery-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-gallery-drafts:change';
+import {
+  createAdminContentItem,
+  deleteAdminContentItem,
+  fetchAdminContentCollection,
+  mapAdminApiError,
+  updateAdminContentItem,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
+
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
 const ALLOWED_STATUSES = new Set(['Published', 'Review', 'Draft']);
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -52,35 +55,7 @@ function findTeamSlug(item, teams) {
   return '';
 }
 
-function readStoredGallery() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredGallery(items) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
-function toStoredGalleryRecord(item, teams, { isLocalOnly = false } = {}) {
+function toStoredGalleryRecord(item, teams) {
   const dateIso = normalizeText(item.dateIso);
 
   return {
@@ -91,29 +66,13 @@ function toStoredGalleryRecord(item, teams, { isLocalOnly = false } = {}) {
     dateIso,
     id: String(item.id ?? item.slug),
     image: normalizeText(item.image),
-    isLocalOnly,
+    isLocalOnly: false,
     slug: normalizeText(item.slug),
     status: normalizeText(item.status) || 'Published',
     teamSlug: findTeamSlug(item, teams),
     title: normalizeText(item.title),
     updatedAt: item.updatedAt ?? new Date().toISOString(),
   };
-}
-
-function ensureSeededGallery(sourceGallery) {
-  const storedGallery = readStoredGallery();
-
-  if (storedGallery?.length) {
-    return storedGallery;
-  }
-
-  if (!sourceGallery.length) {
-    return [];
-  }
-
-  const seededGallery = sourceGallery.map((item) => item);
-  writeStoredGallery(seededGallery);
-  return seededGallery;
 }
 
 function buildUniqueSlug(slug, items, currentId) {
@@ -199,77 +158,48 @@ export function validateGalleryDraft(values, items, teams, currentId) {
   };
 }
 
-function buildStoredGalleryFromForm(values, items, teams, currentId = null) {
+function buildStoredGalleryFromForm(values, items, teams, currentId = null, existingItem = null) {
   const validation = validateGalleryDraft(values, items, teams, currentId);
 
   if (Object.keys(validation.errors).length) {
     return {
       errors: validation.errors,
       item: null,
+      payload: null,
     };
   }
 
-  const existingItem = currentId ? items.find((item) => item.id === currentId) ?? null : null;
   const dateIso = normalizeText(values.dateIso);
+  const preview = {
+    caption: normalizeText(values.caption),
+    category: normalizeText(values.category),
+    createdAt: existingItem?.createdAt ?? new Date().toISOString(),
+    date: formatDisplayDate(dateIso),
+    dateIso,
+    id: currentId ?? existingItem?.id ?? '',
+    image: normalizeText(values.image),
+    isLocalOnly: false,
+    slug: buildUniqueSlug(validation.normalizedSlug, items, currentId),
+    status: normalizeText(values.status),
+    teamSlug: validation.selectedTeam?.slug ?? '',
+    title: normalizeText(values.title),
+    updatedAt: new Date().toISOString(),
+  };
 
   return {
     errors: {},
-    item: {
-      caption: normalizeText(values.caption),
-      category: normalizeText(values.category),
-      createdAt: existingItem?.createdAt ?? new Date().toISOString(),
-      date: formatDisplayDate(dateIso),
-      dateIso,
-      id: currentId ?? `local-gallery-${Date.now()}`,
-      image: normalizeText(values.image),
-      isLocalOnly: existingItem?.isLocalOnly ?? true,
-      slug: buildUniqueSlug(validation.normalizedSlug, items, currentId),
-      status: normalizeText(values.status),
-      teamSlug: validation.selectedTeam?.slug ?? '',
-      title: normalizeText(values.title),
-      updatedAt: new Date().toISOString(),
+    item: preview,
+    payload: {
+      caption: preview.caption,
+      category: preview.category,
+      dateIso: preview.dateIso,
+      image: preview.image,
+      slug: preview.slug,
+      status: preview.status,
+      teamSlug: preview.teamSlug,
+      title: preview.title,
     },
   };
-}
-
-export function createAdminGalleryDraft(values, items, teams) {
-  const result = buildStoredGalleryFromForm(values, items, teams);
-
-  if (!result.item) {
-    return result;
-  }
-
-  const nextGallery = [result.item, ...items];
-  writeStoredGallery(nextGallery);
-
-  return {
-    errors: {},
-    gallery: nextGallery,
-    item: result.item,
-  };
-}
-
-export function updateAdminGalleryDraft(itemId, values, items, teams) {
-  const result = buildStoredGalleryFromForm(values, items, teams, itemId);
-
-  if (!result.item) {
-    return result;
-  }
-
-  const nextGallery = items.map((item) => (item.id === itemId ? result.item : item));
-  writeStoredGallery(nextGallery);
-
-  return {
-    errors: {},
-    gallery: nextGallery,
-    item: result.item,
-  };
-}
-
-export function deleteAdminGalleryDraft(itemId, items) {
-  const nextGallery = items.filter((item) => item.id !== itemId);
-  writeStoredGallery(nextGallery);
-  return nextGallery;
 }
 
 function enrichGalleryItem(item, teams) {
@@ -289,30 +219,40 @@ export function useAdminGalleryDrafts(sourceGallery, teams) {
     () => sourceGallery.map((item) => toStoredGalleryRecord(item, teams)),
     [sourceGallery, teams],
   );
-  const [gallery, setGallery] = useState([]);
+  const [gallery, setGallery] = useState(normalizedSourceGallery);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const syncGallery = () => {
-      const nextGallery = ensureSeededGallery(normalizedSourceGallery);
-      setGallery(nextGallery);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncGallery();
+    async function loadGallery() {
+      try {
+        const records = await fetchAdminContentCollection('gallery', abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setGallery(records.map((item) => toStoredGalleryRecord(item, teams)));
+      } catch {
+        if (!isCancelled) {
+          setGallery(normalizedSourceGallery);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncGallery);
-    window.addEventListener('storage', syncGallery);
+    loadGallery();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncGallery);
-      window.removeEventListener('storage', syncGallery);
+      isCancelled = true;
+      abortController.abort();
     };
-  }, [normalizedSourceGallery]);
+  }, [normalizedSourceGallery, teams]);
 
   const enrichedGallery = useMemo(
     () =>
@@ -328,28 +268,110 @@ export function useAdminGalleryDrafts(sourceGallery, teams) {
     findGalleryBySlug(slug) {
       return enrichedGallery.find((item) => item.slug === slug) ?? null;
     },
-    createGallery(values) {
-      const result = createAdminGalleryDraft(values, gallery, teams);
+    async createGallery(values) {
+      const result = buildStoredGalleryFromForm(values, gallery, teams);
 
-      if (result.gallery) {
-        setGallery(result.gallery);
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
-    },
-    updateGallery(itemId, values) {
-      const result = updateAdminGalleryDraft(itemId, values, gallery, teams);
+      try {
+        const savedItem = await createAdminContentItem('gallery', result.payload);
+        const normalizedItem = toStoredGalleryRecord(savedItem, teams);
+        const nextGallery = [normalizedItem, ...gallery];
+        setGallery(nextGallery);
+        recordAdminActivity({
+          action: 'gallery.create',
+          afterSnapshot: normalizedItem,
+          entityId: normalizedItem.id,
+          entityLabel: normalizedItem.title,
+          entityType: 'gallery',
+          summary: `${normalizedItem.title} was added to the protected gallery archive.`,
+        });
 
-      if (result.gallery) {
-        setGallery(result.gallery);
+        return {
+          errors: {},
+          gallery: nextGallery,
+          item: enrichGalleryItem(normalizedItem, teams),
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The gallery item could not be created.');
+        return {
+          errors: apiError.errors,
+          item: null,
+          message: apiError.message,
+        };
+      }
+    },
+    async updateGallery(itemId, values) {
+      const previousItem = gallery.find((item) => item.id === itemId) ?? null;
+      const result = buildStoredGalleryFromForm(values, gallery, teams, itemId, previousItem);
+
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
+      try {
+        const savedItem = await updateAdminContentItem('gallery', itemId, result.payload);
+        const normalizedItem = toStoredGalleryRecord(savedItem, teams);
+        const nextGallery = gallery.map((item) => (item.id === itemId ? normalizedItem : item));
+        setGallery(nextGallery);
+        recordAdminActivity({
+          action: 'gallery.update',
+          afterSnapshot: normalizedItem,
+          beforeSnapshot: previousItem,
+          entityId: normalizedItem.id,
+          entityLabel: normalizedItem.title,
+          entityType: 'gallery',
+          summary: `${normalizedItem.title} was updated in the protected gallery archive.`,
+        });
+
+        return {
+          errors: {},
+          gallery: nextGallery,
+          item: enrichGalleryItem(normalizedItem, teams),
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The gallery item could not be updated.');
+        return {
+          errors: apiError.errors,
+          item: null,
+          message: apiError.message,
+        };
+      }
     },
-    deleteGallery(itemId) {
-      const nextGallery = deleteAdminGalleryDraft(itemId, gallery);
-      setGallery(nextGallery);
-      return nextGallery;
+    async deleteGallery(itemId) {
+      const previousItem = gallery.find((item) => item.id === itemId) ?? null;
+
+      try {
+        await deleteAdminContentItem('gallery', itemId);
+        const nextGallery = gallery.filter((item) => item.id !== itemId);
+        setGallery(nextGallery);
+
+        if (previousItem) {
+          recordAdminActivity({
+            action: 'gallery.delete',
+            beforeSnapshot: previousItem,
+            entityId: previousItem.id,
+            entityLabel: previousItem.title,
+            entityType: 'gallery',
+            summary: `${previousItem.title} was removed from the protected gallery archive.`,
+          });
+        }
+
+        return {
+          error: '',
+          gallery: nextGallery,
+        };
+      } catch (error) {
+        return {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected gallery item could not be deleted.',
+          gallery,
+        };
+      }
     },
   };
 }

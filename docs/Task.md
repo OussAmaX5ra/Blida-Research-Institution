@@ -110,13 +110,13 @@ Create a secure management portal that allows authenticated admins to manage all
 - `[x]` Build the Gallery delete workflow with confirmation
 - `[x]` Build the User management interface
 - `[x]` Implement user activation, deactivation, role assignment, and password reset workflows
-- `[ ]` Implement admin activity logging for important actions
-- `[ ]` Implement client-side and server-side validation across all admin forms
-- `[ ]` Connect admin team , member , project , publication , news and gallery CRUD to the public data source so newly created or updated records appear on the public site
+- `[x]` Implement admin activity logging for important actions
+- `[x]` Implement client-side and server-side validation across all admin forms
+- `[x]` Connect admin team , member , project , publication , news and gallery CRUD to the public data source so newly created or updated records appear on the public site
 
 ### Milestone Status
 
-- `[ ]` Milestone 3 complete
+- `[x]` Milestone 3 complete
 
 ## Milestone 4: Innovation Features
 

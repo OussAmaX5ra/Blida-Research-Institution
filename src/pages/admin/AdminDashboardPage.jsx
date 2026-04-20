@@ -2,6 +2,7 @@ import {
   AlarmClockCheck,
   BookCopy,
   ChartNoAxesCombined,
+  History,
   ShieldCheck,
   Siren,
 } from 'lucide-react';
@@ -12,8 +13,27 @@ import {
   adminDeskNotes,
   adminQuickActions,
 } from '../../data/adminData.js';
+import { useAdminActivityLog } from '../../lib/admin-activity-log.js';
+
+function formatActivityTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown time';
+  }
+
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+  });
+}
 
 export default function AdminDashboardPage() {
+  const { entries } = useAdminActivityLog();
+  const recentActivity = entries.slice(0, 4);
+
   return (
     <section className="admin-editorial-grid">
       <article className="admin-editorial-card admin-editorial-card-wide">
@@ -64,6 +84,30 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
+      </article>
+
+      <article className="admin-editorial-card">
+        <div className="admin-panel-heading">
+          <History size={16} />
+          Recent activity
+        </div>
+        {recentActivity.length ? (
+          <div className="admin-timeline-list">
+            {recentActivity.map((entry) => (
+              <div key={entry.id} className="admin-timeline-row">
+                <time>{formatActivityTime(entry.createdAt)}</time>
+                <div>
+                  <strong>{entry.entityLabel || entry.action}</strong>
+                  <span>{entry.summary || entry.action}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="admin-body-copy">
+            The audit stream will appear here as soon as protected admin actions are recorded.
+          </p>
+        )}
       </article>
 
       <article className="admin-editorial-card">

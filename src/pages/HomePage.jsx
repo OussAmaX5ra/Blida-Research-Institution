@@ -8,11 +8,9 @@ import {
   Newspaper,
   Users2,
 } from 'lucide-react';
-import { faculty, labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
-
-const featuredFaculty = faculty.slice(0, 4);
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   return (
@@ -132,11 +130,12 @@ function NewsCard({ item }) {
 
 export default function HomePage({ onNavigate }) {
   const {
-    collections: { news, publications, teams },
+    collections: { members, news, publications, teams },
     error,
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
 
   if (!hasLoaded && isLoading) {
@@ -160,6 +159,13 @@ export default function HomePage({ onNavigate }) {
     );
   }
 
+  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const featuredFaculty = members.slice(0, 4).map((member) => ({
+    avatar: member.avatar,
+    expertise: member.expertise,
+    name: member.name,
+    team: member.team?.acronym ?? 'BRI',
+  }));
   const featuredTeams = teams.slice(0, 4);
   const featuredPublications = publications.slice(0, 3);
   const latestNews = news.slice(0, 3);

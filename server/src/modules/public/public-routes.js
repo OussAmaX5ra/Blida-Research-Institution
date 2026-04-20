@@ -7,6 +7,7 @@ import {
   getPublicNewsItem,
   getPublicProject,
   getPublicPublication,
+  getPublicSiteContext,
   getPublicTeam,
   listPublicGallery,
   listPublicMembers,
@@ -24,113 +25,125 @@ function getQueryFilters(query) {
   );
 }
 
-publicRouter.get("/teams", (request, response, next) => {
+publicRouter.get("/site-context", async (_request, response, next) => {
   try {
-    response.status(200).json(listPublicTeams(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicSiteContext());
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/teams/:identifier", (request, response, next) => {
+publicRouter.get("/teams", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicTeam(request.params.identifier));
+    response.status(200).json(await listPublicTeams(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/members", (request, response, next) => {
+publicRouter.get("/teams/:identifier", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicMembers(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicTeam(request.params.identifier));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/members/grouped", (request, response, next) => {
+publicRouter.get("/members", async (request, response, next) => {
   try {
-    response.status(200).json(getGroupedPublicMembers(getQueryFilters(request.query)));
+    response.status(200).json(await listPublicMembers(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/members/:identifier", (request, response, next) => {
+publicRouter.get("/members/grouped", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicMember(request.params.identifier));
+    response.status(200).json(await getGroupedPublicMembers(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/projects", (request, response, next) => {
+publicRouter.get("/members/:identifier", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicProjects(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicMember(request.params.identifier));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/projects/:identifier", (request, response, next) => {
+publicRouter.get("/projects", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicProject(request.params.identifier));
+    response.status(200).json(await listPublicProjects(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/publications", (request, response, next) => {
+publicRouter.get("/projects/:identifier", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicPublications(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicProject(request.params.identifier));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/publications/search", (request, response, next) => {
+publicRouter.get("/publications", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicPublications(getQueryFilters(request.query)));
+    response
+      .status(200)
+      .json(await listPublicPublications(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/publications/:identifier", (request, response, next) => {
+publicRouter.get("/publications/search", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicPublication(request.params.identifier));
+    response
+      .status(200)
+      .json(await listPublicPublications(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/news", (request, response, next) => {
+publicRouter.get("/publications/:identifier", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicNews(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicPublication(request.params.identifier));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/news/:identifier", (request, response, next) => {
+publicRouter.get("/news", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicNewsItem(request.params.identifier));
+    response.status(200).json(await listPublicNews(getQueryFilters(request.query)));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/gallery", (request, response, next) => {
+publicRouter.get("/news/:identifier", async (request, response, next) => {
   try {
-    response.status(200).json(listPublicGallery(getQueryFilters(request.query)));
+    response.status(200).json(await getPublicNewsItem(request.params.identifier));
   } catch (error) {
     next(error);
   }
 });
 
-publicRouter.get("/gallery/:identifier", (request, response, next) => {
+publicRouter.get("/gallery", async (request, response, next) => {
   try {
-    response.status(200).json(getPublicGalleryItem(request.params.identifier));
+    response.status(200).json(await listPublicGallery(getQueryFilters(request.query)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+publicRouter.get("/gallery/:identifier", async (request, response, next) => {
+  try {
+    response.status(200).json(await getPublicGalleryItem(request.params.identifier));
   } catch (error) {
     next(error);
   }

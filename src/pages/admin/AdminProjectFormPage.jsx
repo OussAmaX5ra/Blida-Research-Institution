@@ -11,6 +11,7 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import AdminToast from '../../components/admin/AdminToast.jsx';
+import { validateAdminFormOnServer } from '../../lib/admin-form-validation-api.js';
 import {
   slugifyProjectTitle,
   useAdminProjectDrafts,
@@ -284,7 +285,7 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
     }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validation = validateProjectDraft(values, projects, teams, existingProject?.id ?? null);
 
@@ -297,6 +298,19 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
         message: mode === 'create'
           ? 'The project could not be created yet. Review the highlighted fields and try again.'
           : 'The project could not be saved yet. Review the highlighted fields and try again.',
+      });
+      return;
+    }
+
+    const serverValidation = await validateAdminFormOnServer('project', values);
+
+    if (Object.keys(serverValidation.errors ?? {}).length) {
+      setErrors(serverValidation.errors);
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this project draft.');
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Project not created' : 'Project not saved',
+        message: 'Protected validation rejected the current project values. Review the highlighted fields and try again.',
       });
       return;
     }

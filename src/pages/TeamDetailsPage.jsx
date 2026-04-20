@@ -10,7 +10,6 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { researchAxes } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
 import { usePublicData } from '../providers/usePublicData.js';
 
@@ -152,6 +151,7 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
 
   if (!hasLoaded && isLoading) {
@@ -181,6 +181,7 @@ export default function TeamDetailsPage({ slug, onNavigate }) {
     return <TeamNotFound slug={slug} onNavigate={onNavigate} />;
   }
 
+  const researchAxes = siteContext.researchAxes ?? [];
   const relatedAxis = researchAxes.find((axis) => axis.id === team.axisId);
   const relatedMembers = members.filter((member) => member.team.slug === team.slug);
   const relatedProjects = projects.filter((project) => project.team?.slug === team.slug);

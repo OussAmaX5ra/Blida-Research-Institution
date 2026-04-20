@@ -1,6 +1,11 @@
 import { useEffect, useEffectEvent, useState, useTransition } from 'react';
 
 import { loadCurrentAdmin, logoutAdmin } from '../lib/admin-auth-api.js';
+import {
+  clearCurrentAdminActivityActor,
+  recordAdminActivity,
+  setCurrentAdminActivityActor,
+} from '../lib/admin-activity-log.js';
 import { AdminSessionContext } from './AdminSessionContext.js';
 
 function AdminSessionProvider({ children }) {
@@ -19,6 +24,8 @@ function AdminSessionProvider({ children }) {
         return;
       }
 
+      setCurrentAdminActivityActor(user);
+
       startTransition(() => {
         setState({
           status: user ? 'authenticated' : 'unauthenticated',
@@ -30,6 +37,8 @@ function AdminSessionProvider({ children }) {
       if (signal?.aborted) {
         return;
       }
+
+      clearCurrentAdminActivityActor();
 
       startTransition(() => {
         setState({
@@ -58,6 +67,14 @@ function AdminSessionProvider({ children }) {
         isAuthenticated: state.status === 'authenticated',
         isLoading: state.status === 'loading',
         completeLogin(user) {
+          setCurrentAdminActivityActor(user);
+          recordAdminActivity({
+            action: 'auth.login',
+            actor: user,
+            entityType: 'system',
+            summary: `${user.fullName} signed in to the protected workspace.`,
+          });
+
           startTransition(() => {
             setState({
               status: 'authenticated',
@@ -67,9 +84,22 @@ function AdminSessionProvider({ children }) {
           });
         },
         async logout() {
+          const currentUser = state.user;
+
           try {
             await logoutAdmin();
           } finally {
+            if (currentUser) {
+              recordAdminActivity({
+                action: 'auth.logout',
+                actor: currentUser,
+                entityType: 'system',
+                summary: `${currentUser.fullName} signed out of the protected workspace.`,
+              });
+            }
+
+            clearCurrentAdminActivityActor();
+
             startTransition(() => {
               setState({
                 status: 'unauthenticated',
@@ -88,6 +118,8 @@ function AdminSessionProvider({ children }) {
               return;
             }
 
+            setCurrentAdminActivityActor(user);
+
             startTransition(() => {
               setState({
                 status: user ? 'authenticated' : 'unauthenticated',
@@ -99,6 +131,8 @@ function AdminSessionProvider({ children }) {
             if (abortController.signal.aborted) {
               return;
             }
+
+            clearCurrentAdminActivityActor();
 
             startTransition(() => {
               setState({

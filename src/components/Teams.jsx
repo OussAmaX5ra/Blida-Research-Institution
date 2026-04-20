@@ -1,6 +1,6 @@
-import { useState, memo } from 'react';
+import { useState, memo, useMemo } from 'react';
 import { Users, ChevronDown, ChevronUp, Beaker, BookOpen } from 'lucide-react';
-import { teams } from '../data/mockData';
+import { usePublicData } from '../providers/usePublicData';
 
 const roleColors = {
   Professor: { bg: 'rgba(201,168,76,0.12)', text: '#8a6e2f', border: 'rgba(201,168,76,0.3)' },
@@ -17,8 +17,13 @@ const Avatar = memo(function Avatar({ initials, color }) {
   );
 });
 
-const TeamCard = memo(function TeamCard({ team }) {
+const TeamCard = memo(function TeamCard({ team, members }) {
   const [expanded, setExpanded] = useState(false);
+
+  const teamMembers = useMemo(
+    () => members.filter(m => m.team?.slug === team.slug),
+    [members, team.slug],
+  );
 
   return (
     <article
@@ -58,63 +63,67 @@ const TeamCard = memo(function TeamCard({ team }) {
              style={{ borderBottom: '1px solid var(--color-surface-alt)' }}>
           <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-muted)' }}>
             <Users size={12} />
-            <span>{team.members.length} members</span>
+            <span>{team.memberCount ?? teamMembers.length} members</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-muted)' }}>
             <BookOpen size={12} />
-            <span>{team.publications} publications</span>
+            <span>{team.publicationCount ?? 0} publications</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-muted)' }}>
             <Beaker size={12} />
-            <span>{team.projects.length} projects</span>
+            <span>{team.projectCount ?? 0} projects</span>
           </div>
         </div>
 
-        {/* Active projects */}
+        {/* Active themes */}
         <div className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted)' }}>
-            Active Projects
+            Research Themes
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {team.projects.map(p => (
-              <span key={p} className="px-2 py-0.5 text-xs rounded-full"
+            {(team.themes ?? []).map(t => (
+              <span key={t} className="px-2 py-0.5 text-xs rounded-full"
                     style={{ background: 'var(--color-surface)', border: '1px solid var(--color-surface-alt)', color: 'var(--color-ink)' }}>
-                {p}
+                {t}
               </span>
             ))}
           </div>
         </div>
 
         {/* Expand/collapse members */}
-        <button
-          onClick={() => setExpanded(prev => !prev)}
-          className="flex items-center gap-1.5 text-xs font-semibold w-full justify-center py-2 rounded transition-all duration-200 hover:opacity-80"
-          style={{ background: `${team.color}12`, color: team.color }}
-        >
-          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          {expanded ? 'Hide Members' : 'See All Members'}
-        </button>
+        {teamMembers.length > 0 && (
+          <>
+            <button
+              onClick={() => setExpanded(prev => !prev)}
+              className="flex items-center gap-1.5 text-xs font-semibold w-full justify-center py-2 rounded transition-all duration-200 hover:opacity-80"
+              style={{ background: `${team.color}12`, color: team.color }}
+            >
+              {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              {expanded ? 'Hide Members' : 'See All Members'}
+            </button>
 
-        {/* Members list */}
-        {expanded && (
-          <div className="mt-4 space-y-2 animate-fade-in">
-            {team.members.map(m => {
-              const colors = roleColors[m.role] || roleColors['PhD Student'];
-              return (
-                <div key={m.name} className="flex items-center gap-3 p-2 rounded"
-                     style={{ background: 'var(--color-surface)' }}>
-                  <Avatar initials={m.avatar} color={team.color} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{m.name}</p>
-                  </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}>
-                    {m.role}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+            {/* Members list */}
+            {expanded && (
+              <div className="mt-4 space-y-2 animate-fade-in">
+                {teamMembers.map(m => {
+                  const colors = roleColors[m.role] || roleColors['PhD Student'];
+                  return (
+                    <div key={m.slug || m.name} className="flex items-center gap-3 p-2 rounded"
+                         style={{ background: 'var(--color-surface)' }}>
+                      <Avatar initials={m.avatar} color={team.color} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>{m.name}</p>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                            style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}>
+                        {m.role}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
     </article>
@@ -122,6 +131,10 @@ const TeamCard = memo(function TeamCard({ team }) {
 });
 
 export default function Teams() {
+  const { collections } = usePublicData();
+  const teams = collections?.teams ?? [];
+  const members = collections?.members ?? [];
+
   return (
     <section id="teams" className="py-24 px-6" style={{ background: 'var(--color-surface)' }}>
       <div className="max-w-7xl mx-auto">
@@ -144,7 +157,7 @@ export default function Teams() {
         {/* Team grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-5">
           {teams.map(team => (
-            <TeamCard key={team.id} team={team} />
+            <TeamCard key={team.id || team.slug} team={team} members={members} />
           ))}
         </div>
       </div>

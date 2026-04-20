@@ -16,6 +16,7 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import { useAdminGalleryDrafts } from '../../lib/admin-gallery-drafts.js';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
@@ -330,8 +331,9 @@ export default function AdminGalleryPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteGallery, gallery, isReady } = useAdminGalleryDrafts(sourceGallery, teams);
   const [pendingDeleteItem, setPendingDeleteItem] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -415,12 +417,12 @@ export default function AdminGalleryPage({ onNavigate }) {
     return <AdminGalleryErrorState error={error} onRetry={retry} />;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!pendingDeleteItem || deleteConfirmation !== pendingDeleteItem.slug) {
       return;
     }
 
-    deleteGallery(pendingDeleteItem.id);
+    await deleteGallery(pendingDeleteItem.id);
     setPendingDeleteItem(null);
     setDeleteConfirmation('');
   }

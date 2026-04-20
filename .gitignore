@@ -5,3 +5,5 @@ server/.env.local
 node_modules/
 graphify-out/
 rebuild_graph.py
+skills/
+docs/mcp_screenshots

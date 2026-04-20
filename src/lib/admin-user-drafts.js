@@ -1,77 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'research-lab.admin-user-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-user-drafts:change';
+import {
+  fetchAdminUsers,
+  issueAdminUserPasswordReset,
+  updateAdminUserAccess as updateAdminUserAccessApi,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
 
 export const ADMIN_USER_ROLE_OPTIONS = ['super_admin', 'content_admin', 'editor'];
 export const ADMIN_USER_STATUS_OPTIONS = ['active', 'inactive', 'locked'];
-
-const seededAccounts = [
-  {
-    id: 'seed-user-01',
-    fullName: 'Pr. Nadia Benkirane',
-    email: 'nadia.benkirane@blida-ri.dz',
-    role: 'super_admin',
-    status: 'active',
-    lastLoginAt: '2026-04-15T16:40:00Z',
-    memberId: 'member-governance-01',
-    memberLabel: 'Directorate and institute governance',
-    accessScope: 'Owns security, publishing policy, user governance, and system oversight.',
-    capabilities: ['Security approvals', 'Role governance', 'Platform settings'],
-  },
-  {
-    id: 'seed-user-02',
-    fullName: 'Samir Tighilt',
-    email: 'samir.tighilt@blida-ri.dz',
-    role: 'content_admin',
-    status: 'active',
-    lastLoginAt: '2026-04-15T11:12:00Z',
-    memberId: 'member-archive-02',
-    memberLabel: 'Publication and archive coordination',
-    accessScope: 'Stewards publications, institutional stories, and visual archive quality.',
-    capabilities: ['Publication queue', 'News desk', 'Gallery archive'],
-  },
-  {
-    id: 'seed-user-03',
-    fullName: 'Meriem Azzouz',
-    email: 'meriem.azzouz@blida-ri.dz',
-    role: 'editor',
-    status: 'active',
-    lastLoginAt: '2026-04-14T09:25:00Z',
-    memberId: 'member-editorial-03',
-    memberLabel: 'Doctoral communications desk',
-    accessScope: 'Supports editorial cleanup and structured metadata hygiene across admin surfaces.',
-    capabilities: ['Editorial cleanup', 'Metadata checks', 'Draft review'],
-  },
-  {
-    id: 'seed-user-04',
-    fullName: 'Yacine Khellaf',
-    email: 'yacine.khellaf@blida-ri.dz',
-    role: 'content_admin',
-    status: 'inactive',
-    lastLoginAt: '2026-03-28T08:05:00Z',
-    memberId: null,
-    memberLabel: 'Former grant communication liaison',
-    accessScope: 'Previously coordinated grant and partnership announcements.',
-    capabilities: ['Research updates', 'Partner notes', 'Archive review'],
-  },
-  {
-    id: 'seed-user-05',
-    fullName: 'Lina Boukhalfa',
-    email: 'lina.boukhalfa@blida-ri.dz',
-    role: 'editor',
-    status: 'locked',
-    lastLoginAt: '2026-04-10T18:30:00Z',
-    memberId: null,
-    memberLabel: 'Student newsroom coordination',
-    accessScope: 'Handles first-pass edits for campus-facing updates and event coverage.',
-    capabilities: ['Story intake', 'Caption review', 'Editorial staging'],
-  },
-];
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -85,7 +22,7 @@ function normalizeCapabilities(value) {
   return [];
 }
 
-function toStoredUserRecord(account, { isCurrentSession = false } = {}) {
+function toStoredUserRecord(account) {
   return {
     accessScope: normalizeText(account.accessScope),
     capabilities: normalizeCapabilities(account.capabilities),
@@ -93,7 +30,7 @@ function toStoredUserRecord(account, { isCurrentSession = false } = {}) {
     email: normalizeText(account.email).toLowerCase(),
     fullName: normalizeText(account.fullName),
     id: String(account.id),
-    isCurrentSession,
+    isCurrentSession: Boolean(account.isCurrentSession),
     lastLoginAt: account.lastLoginAt ?? null,
     memberId: account.memberId ?? null,
     memberLabel: normalizeText(account.memberLabel),
@@ -106,145 +43,62 @@ function toStoredUserRecord(account, { isCurrentSession = false } = {}) {
   };
 }
 
-function readStoredUsers() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredUsers(users) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
-function ensureSeededUsers() {
-  const storedUsers = readStoredUsers();
-
-  if (storedUsers?.length) {
-    return storedUsers;
-  }
-
-  const nextUsers = seededAccounts.map((account) => toStoredUserRecord(account));
-  writeStoredUsers(nextUsers);
-  return nextUsers;
-}
-
-function buildTemporaryPassword() {
-  return `BRI-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function useAdminUserDrafts(sessionUser) {
   const [storedUsers, setStoredUsers] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
-  const sessionAccount = useMemo(() => {
-    if (!sessionUser) {
-      return null;
-    }
-
-    return toStoredUserRecord(
-      {
-        id: sessionUser.id,
-        fullName: sessionUser.fullName,
-        email: sessionUser.email,
-        role: sessionUser.role,
-        status: sessionUser.status,
-        lastLoginAt: null,
-        memberId: sessionUser.memberId ?? null,
-        memberLabel: sessionUser.memberId
-          ? 'Linked to a member profile in the protected system.'
-          : 'Authenticated directly as an admin account.',
-        accessScope: 'This is the authenticated account active in the current browser session.',
-        capabilities:
-          sessionUser.permissions?.length
-            ? sessionUser.permissions.slice(0, 3).map((permission) => permission.replaceAll('-', ' '))
-            : ['Protected workspace'],
-      },
-      { isCurrentSession: true },
-    );
-  }, [sessionUser]);
-
   useEffect(() => {
-    const syncUsers = () => {
-      const nextUsers = ensureSeededUsers();
-      setStoredUsers(nextUsers);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncUsers();
+    async function loadUsers() {
+      try {
+        const records = await fetchAdminUsers(abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setStoredUsers(records.map((account) => toStoredUserRecord(account)));
+      } catch {
+        if (!isCancelled) {
+          setStoredUsers([]);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncUsers);
-    window.addEventListener('storage', syncUsers);
+    loadUsers();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncUsers);
-      window.removeEventListener('storage', syncUsers);
+      isCancelled = true;
+      abortController.abort();
     };
-  }, []);
+  }, [sessionUser?.id]);
 
-  const accounts = useMemo(() => {
-    const accountMap = new Map(
-      storedUsers.map((account) => [account.email.toLowerCase(), account]),
-    );
-
-    if (sessionAccount) {
-      const existingAccount = accountMap.get(sessionAccount.email.toLowerCase());
-
-      accountMap.set(sessionAccount.email.toLowerCase(), {
-        ...existingAccount,
-        ...sessionAccount,
-        role: sessionAccount.role,
-        status: sessionAccount.status,
-        isCurrentSession: true,
-      });
-    }
-
-    return [...accountMap.values()];
-  }, [sessionAccount, storedUsers]);
+  const accounts = useMemo(() => storedUsers, [storedUsers]);
 
   function findStoredUser(accountId) {
     return storedUsers.find((account) => account.id === accountId) ?? null;
   }
 
   function isCurrentSessionAccount(account) {
-    return Boolean(
-      sessionAccount &&
-        account &&
-        account.email.toLowerCase() === sessionAccount.email.toLowerCase(),
-    );
+    return Boolean(account?.isCurrentSession);
   }
 
   return {
     accounts,
     isReady,
-    updateAccountAccess(accountId, nextAccess) {
+    async updateAccountAccess(accountId, nextAccess) {
       const existingAccount = findStoredUser(accountId);
 
       if (!existingAccount) {
         return {
           account: null,
-          error: 'The selected admin account could not be found in the local user draft store.',
+          error: 'The selected admin account could not be found.',
         };
       }
 
@@ -255,41 +109,53 @@ export function useAdminUserDrafts(sessionUser) {
         };
       }
 
-      const nextRole = ADMIN_USER_ROLE_OPTIONS.includes(nextAccess.role)
-        ? nextAccess.role
-        : existingAccount.role;
-      const nextStatus = ADMIN_USER_STATUS_OPTIONS.includes(nextAccess.status)
-        ? nextAccess.status
-        : existingAccount.status;
-      const nextAccount = {
-        ...existingAccount,
-        role: nextRole,
-        status: nextStatus,
-        updatedAt: new Date().toISOString(),
-      };
-      const nextUsers = storedUsers.map((account) =>
-        account.id === accountId ? nextAccount : account,
-      );
+      try {
+        const updatedAccount = toStoredUserRecord(
+          await updateAdminUserAccessApi(accountId, {
+            role: nextAccess.role,
+            status: nextAccess.status,
+          }),
+        );
+        const nextUsers = storedUsers.map((account) =>
+          account.id === accountId ? updatedAccount : account,
+        );
 
-      writeStoredUsers(nextUsers);
-      setStoredUsers(nextUsers);
+        setStoredUsers(nextUsers);
+        recordAdminActivity({
+          action: 'user.update',
+          afterSnapshot: updatedAccount,
+          beforeSnapshot: existingAccount,
+          entityId: updatedAccount.id,
+          entityLabel: updatedAccount.fullName,
+          entityType: 'user',
+          summary: `${updatedAccount.fullName} had protected access settings updated.`,
+        });
 
-      return {
-        account: nextAccount,
-        changes: {
-          roleChanged: nextRole !== existingAccount.role,
-          statusChanged: nextStatus !== existingAccount.status,
-        },
-        error: '',
-      };
+        return {
+          account: updatedAccount,
+          changes: {
+            roleChanged: updatedAccount.role !== existingAccount.role,
+            statusChanged: updatedAccount.status !== existingAccount.status,
+          },
+          error: '',
+        };
+      } catch (error) {
+        return {
+          account: null,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected admin account could not be updated.',
+        };
+      }
     },
-    issuePasswordReset(accountId) {
+    async issuePasswordReset(accountId) {
       const existingAccount = findStoredUser(accountId);
 
       if (!existingAccount) {
         return {
           account: null,
-          error: 'The selected admin account could not be found in the local user draft store.',
+          error: 'The selected admin account could not be found.',
           temporaryPassword: '',
         };
       }
@@ -302,27 +168,39 @@ export function useAdminUserDrafts(sessionUser) {
         };
       }
 
-      const issuedAt = new Date().toISOString();
-      const temporaryPassword = buildTemporaryPassword();
-      const nextAccount = {
-        ...existingAccount,
-        mustChangePassword: true,
-        passwordResetAt: issuedAt,
-        passwordResetReference: `RESET-${Date.now().toString(36).toUpperCase()}`,
-        updatedAt: issuedAt,
-      };
-      const nextUsers = storedUsers.map((account) =>
-        account.id === accountId ? nextAccount : account,
-      );
+      try {
+        const result = await issueAdminUserPasswordReset(accountId);
+        const nextAccount = toStoredUserRecord(result.account);
+        const nextUsers = storedUsers.map((account) =>
+          account.id === accountId ? nextAccount : account,
+        );
 
-      writeStoredUsers(nextUsers);
-      setStoredUsers(nextUsers);
+        setStoredUsers(nextUsers);
+        recordAdminActivity({
+          action: 'user.reset_password',
+          afterSnapshot: nextAccount,
+          beforeSnapshot: existingAccount,
+          entityId: nextAccount.id,
+          entityLabel: nextAccount.fullName,
+          entityType: 'user',
+          summary: `${nextAccount.fullName} received a one-time password reset workflow.`,
+        });
 
-      return {
-        account: nextAccount,
-        error: '',
-        temporaryPassword,
-      };
+        return {
+          account: nextAccount,
+          error: '',
+          temporaryPassword: result.temporaryPassword,
+        };
+      } catch (error) {
+        return {
+          account: null,
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The password reset could not be issued.',
+          temporaryPassword: '',
+        };
+      }
     },
   };
 }

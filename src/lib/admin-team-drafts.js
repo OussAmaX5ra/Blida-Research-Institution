@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { researchAxes } from '../data/mockData.js';
+import {
+  createAdminContentItem,
+  deleteAdminContentItem,
+  fetchAdminContentCollection,
+  mapAdminApiError,
+  updateAdminContentItem,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
 
-const STORAGE_KEY = 'research-lab.admin-team-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-team-drafts:change';
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -50,13 +51,13 @@ function countMembersByRole(team) {
   );
 }
 
-function getAxisMeta(axisId) {
+function getAxisMeta(axisId, researchAxes) {
   return researchAxes.find((axis) => axis.id === axisId) ?? null;
 }
 
-function toStoredTeamRecord(team, { isLocalOnly = false } = {}) {
+function toStoredTeamRecord(team, researchAxes) {
   const axisId = team.axisId ?? team.axis?.id ?? '';
-  const axis = team.axis ?? getAxisMeta(axisId);
+  const axis = team.axis ?? getAxisMeta(axisId, researchAxes);
 
   return {
     acronym: normalizeText(team.acronym).toUpperCase(),
@@ -74,7 +75,7 @@ function toStoredTeamRecord(team, { isLocalOnly = false } = {}) {
     createdAt: team.createdAt ?? new Date().toISOString(),
     focus: normalizeText(team.focus ?? team.researchFocus),
     id: String(team.id),
-    isLocalOnly,
+    isLocalOnly: false,
     leader: normalizeText(team.leader),
     memberCount: team.memberCount ?? team.members?.length ?? 0,
     memberCounts: team.memberCounts ?? countMembersByRole(team),
@@ -85,52 +86,8 @@ function toStoredTeamRecord(team, { isLocalOnly = false } = {}) {
     status: normalizeText(team.status) || 'active',
     summary: normalizeText(team.summary ?? team.description),
     themes: parseThemes(team.themes),
-    updatedAt: new Date().toISOString(),
+    updatedAt: team.updatedAt ?? new Date().toISOString(),
   };
-}
-
-function readStoredTeams() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredTeams(teams) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(teams));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
-function ensureSeededTeams(sourceTeams) {
-  const storedTeams = readStoredTeams();
-
-  if (storedTeams?.length) {
-    return storedTeams;
-  }
-
-  if (!sourceTeams.length) {
-    return [];
-  }
-
-  const seededTeams = sourceTeams.map((team) => toStoredTeamRecord(team));
-  writeStoredTeams(seededTeams);
-  return seededTeams;
 }
 
 function buildUniqueSlug(slug, teams, currentId) {
@@ -205,130 +162,112 @@ export function validateTeamDraft(values, teams, currentId) {
   };
 }
 
-function buildStoredTeamFromForm(values, teams, currentId = null) {
+function buildStoredTeamFromForm(values, teams, researchAxes, currentId = null, currentTeam = null) {
   const { errors, normalizedSlug, parsedThemes } = validateTeamDraft(values, teams, currentId);
 
   if (Object.keys(errors).length) {
     return {
       errors,
-      team: null,
+      payload: null,
+      preview: null,
     };
   }
 
-  const axis = getAxisMeta(values.axisId);
-  const matchingCurrentTeam = currentId
-    ? teams.find((team) => team.id === currentId) ?? null
-    : null;
-  const nextId = currentId ?? `local-team-${Date.now()}`;
+  const axis = getAxisMeta(values.axisId, researchAxes);
   const nextSlug = buildUniqueSlug(normalizedSlug, teams, currentId);
-
-  return {
-    errors: {},
-    team: {
-      acronym: normalizeText(values.acronym).toUpperCase(),
-      axis: axis
-        ? {
-            id: axis.id,
-            name: axis.name,
-            shortLabel: axis.shortLabel,
-            accent: axis.accent,
-            summary: axis.summary,
-          }
-        : null,
-      axisId: values.axisId,
-      color: normalizeText(values.color),
-      createdAt: matchingCurrentTeam?.createdAt ?? new Date().toISOString(),
-      focus: normalizeText(values.focus),
-      id: nextId,
-      isLocalOnly: matchingCurrentTeam?.isLocalOnly ?? true,
-      leader: normalizeText(values.leader),
-      memberCount: matchingCurrentTeam?.memberCount ?? 0,
-      memberCounts: matchingCurrentTeam?.memberCounts ?? {
-        Professor: 0,
-        Doctor: 0,
-        'PhD Student': 0,
-      },
-      name: normalizeText(values.name),
-      projectCount: matchingCurrentTeam?.projectCount ?? 0,
-      publicationCount: matchingCurrentTeam?.publicationCount ?? 0,
-      slug: nextSlug,
-      status: normalizeText(values.status) || 'active',
-      summary: normalizeText(values.summary),
-      themes: parsedThemes,
-      updatedAt: new Date().toISOString(),
+  const preview = {
+    acronym: normalizeText(values.acronym).toUpperCase(),
+    axis: axis
+      ? {
+          id: axis.id,
+          name: axis.name,
+          shortLabel: axis.shortLabel,
+          accent: axis.accent,
+          summary: axis.summary,
+        }
+      : null,
+    axisId: values.axisId,
+    color: normalizeText(values.color),
+    createdAt: currentTeam?.createdAt ?? new Date().toISOString(),
+    focus: normalizeText(values.focus),
+    id: currentId ?? currentTeam?.id ?? '',
+    isLocalOnly: false,
+    leader: normalizeText(values.leader),
+    memberCount: currentTeam?.memberCount ?? 0,
+    memberCounts: currentTeam?.memberCounts ?? {
+      Professor: 0,
+      Doctor: 0,
+      'PhD Student': 0,
     },
+    name: normalizeText(values.name),
+    projectCount: currentTeam?.projectCount ?? 0,
+    publicationCount: currentTeam?.publicationCount ?? 0,
+    slug: nextSlug,
+    status: normalizeText(values.status) || 'active',
+    summary: normalizeText(values.summary),
+    themes: parsedThemes,
+    updatedAt: new Date().toISOString(),
   };
-}
-
-export function createAdminTeamDraft(values, teams) {
-  const result = buildStoredTeamFromForm(values, teams);
-
-  if (!result.team) {
-    return result;
-  }
-
-  const nextTeams = [result.team, ...teams];
-  writeStoredTeams(nextTeams);
 
   return {
     errors: {},
-    team: result.team,
-    teams: nextTeams,
+    payload: {
+      acronym: preview.acronym,
+      axisId: preview.axisId,
+      color: preview.color,
+      focus: preview.focus,
+      leader: preview.leader,
+      name: preview.name,
+      slug: preview.slug,
+      status: preview.status,
+      summary: preview.summary,
+      themes: preview.themes,
+    },
+    preview,
   };
 }
 
-export function updateAdminTeamDraft(teamId, values, teams) {
-  const result = buildStoredTeamFromForm(values, teams, teamId);
-
-  if (!result.team) {
-    return result;
-  }
-
-  const nextTeams = teams.map((team) => (team.id === teamId ? result.team : team));
-  writeStoredTeams(nextTeams);
-
-  return {
-    errors: {},
-    team: result.team,
-    teams: nextTeams,
-  };
-}
-
-export function deleteAdminTeamDraft(teamId, teams) {
-  const nextTeams = teams.filter((team) => team.id !== teamId);
-  writeStoredTeams(nextTeams);
-  return nextTeams;
-}
-
-export function useAdminTeamDrafts(sourceTeams) {
+export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
   const normalizedSourceTeams = useMemo(
-    () => sourceTeams.map((team) => toStoredTeamRecord(team)),
-    [sourceTeams],
+    () => sourceTeams.map((team) => toStoredTeamRecord(team, researchAxes)),
+    [researchAxes, sourceTeams],
   );
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState(normalizedSourceTeams);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const syncTeams = () => {
-      const nextTeams = ensureSeededTeams(normalizedSourceTeams);
-      setTeams(nextTeams);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncTeams();
+    async function loadTeams() {
+      try {
+        const records = await fetchAdminContentCollection('team', abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setTeams(records.map((team) => toStoredTeamRecord(team, researchAxes)));
+      } catch {
+        if (isCancelled) {
+          return;
+        }
+
+        setTeams(normalizedSourceTeams);
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncTeams);
-    window.addEventListener('storage', syncTeams);
+    loadTeams();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncTeams);
-      window.removeEventListener('storage', syncTeams);
+      isCancelled = true;
+      abortController.abort();
     };
-  }, [normalizedSourceTeams]);
+  }, [normalizedSourceTeams, researchAxes]);
 
   return {
     isReady,
@@ -336,28 +275,110 @@ export function useAdminTeamDrafts(sourceTeams) {
     findTeamBySlug(slug) {
       return teams.find((team) => team.slug === slug) ?? null;
     },
-    createTeam(values) {
-      const result = createAdminTeamDraft(values, teams);
+    async createTeam(values) {
+      const result = buildStoredTeamFromForm(values, teams, researchAxes);
 
-      if (result.teams) {
-        setTeams(result.teams);
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
-    },
-    updateTeam(teamId, values) {
-      const result = updateAdminTeamDraft(teamId, values, teams);
+      try {
+        const savedTeam = await createAdminContentItem('team', result.payload);
+        const normalizedTeam = toStoredTeamRecord(savedTeam, researchAxes);
+        const nextTeams = [normalizedTeam, ...teams];
+        setTeams(nextTeams);
+        recordAdminActivity({
+          action: 'team.create',
+          afterSnapshot: normalizedTeam,
+          entityId: normalizedTeam.id,
+          entityLabel: normalizedTeam.name,
+          entityType: 'team',
+          summary: `${normalizedTeam.name} was added to the protected team registry.`,
+        });
 
-      if (result.teams) {
-        setTeams(result.teams);
+        return {
+          errors: {},
+          team: normalizedTeam,
+          teams: nextTeams,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The team could not be created.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          team: null,
+        };
+      }
+    },
+    async updateTeam(teamId, values) {
+      const previousTeam = teams.find((team) => team.id === teamId) ?? null;
+      const result = buildStoredTeamFromForm(values, teams, researchAxes, teamId, previousTeam);
+
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
+      try {
+        const savedTeam = await updateAdminContentItem('team', teamId, result.payload);
+        const normalizedTeam = toStoredTeamRecord(savedTeam, researchAxes);
+        const nextTeams = teams.map((team) => (team.id === teamId ? normalizedTeam : team));
+        setTeams(nextTeams);
+        recordAdminActivity({
+          action: 'team.update',
+          afterSnapshot: normalizedTeam,
+          beforeSnapshot: previousTeam,
+          entityId: normalizedTeam.id,
+          entityLabel: normalizedTeam.name,
+          entityType: 'team',
+          summary: `${normalizedTeam.name} was updated inside the protected team registry.`,
+        });
+
+        return {
+          errors: {},
+          team: normalizedTeam,
+          teams: nextTeams,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The team could not be updated.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          team: null,
+        };
+      }
     },
-    deleteTeam(teamId) {
-      const nextTeams = deleteAdminTeamDraft(teamId, teams);
-      setTeams(nextTeams);
-      return nextTeams;
+    async deleteTeam(teamId) {
+      const previousTeam = teams.find((team) => team.id === teamId) ?? null;
+
+      try {
+        await deleteAdminContentItem('team', teamId);
+        const nextTeams = teams.filter((team) => team.id !== teamId);
+        setTeams(nextTeams);
+
+        if (previousTeam) {
+          recordAdminActivity({
+            action: 'team.delete',
+            beforeSnapshot: previousTeam,
+            entityId: previousTeam.id,
+            entityLabel: previousTeam.name,
+            entityType: 'team',
+            summary: `${previousTeam.name} was removed from the protected team registry.`,
+          });
+        }
+
+        return {
+          error: '',
+          teams: nextTeams,
+        };
+      } catch (error) {
+        return {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected team could not be deleted.',
+          teams,
+        };
+      }
     },
   };
 }

@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'research-lab.admin-publication-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-publication-drafts:change';
+import {
+  createAdminContentItem,
+  deleteAdminContentItem,
+  fetchAdminContentCollection,
+  mapAdminApiError,
+  updateAdminContentItem,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
+
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
 const ALLOWED_ENTRY_TYPES = new Set(['article', 'inproceedings']);
 const ALLOWED_STATUSES = new Set(['Published', 'Review', 'Draft']);
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -50,35 +53,7 @@ function findTeamForPublication(publication, teams) {
   return null;
 }
 
-function readStoredPublications() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredPublications(publications) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(publications));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
-function toStoredPublicationRecord(publication, teams, { isLocalOnly = false } = {}) {
+function toStoredPublicationRecord(publication, teams) {
   const team = findTeamForPublication(publication, teams);
 
   return {
@@ -89,7 +64,7 @@ function toStoredPublicationRecord(publication, teams, { isLocalOnly = false } =
     doi: normalizeText(publication.doi),
     entryType: normalizeText(publication.entryType) || 'article',
     id: String(publication.id ?? publication.slug),
-    isLocalOnly,
+    isLocalOnly: false,
     journal: normalizeText(publication.journal),
     pdfLink: normalizeText(publication.pdfLink),
     publisher: normalizeText(publication.publisher),
@@ -101,22 +76,6 @@ function toStoredPublicationRecord(publication, teams, { isLocalOnly = false } =
     updatedAt: publication.updatedAt ?? new Date().toISOString(),
     year: Number(publication.year) || new Date().getFullYear(),
   };
-}
-
-function ensureSeededPublications(sourcePublications) {
-  const storedPublications = readStoredPublications();
-
-  if (storedPublications?.length) {
-    return storedPublications;
-  }
-
-  if (!sourcePublications.length) {
-    return [];
-  }
-
-  const seededPublications = sourcePublications.map((publication) => publication);
-  writeStoredPublications(seededPublications);
-  return seededPublications;
 }
 
 function buildUniqueSlug(slug, publications, currentId) {
@@ -243,85 +202,58 @@ export function validatePublicationDraft(values, publications, teams, currentId)
   };
 }
 
-function buildStoredPublicationFromForm(values, publications, teams, currentId = null) {
+function buildStoredPublicationFromForm(values, publications, teams, currentId = null, existingPublication = null) {
   const validation = validatePublicationDraft(values, publications, teams, currentId);
 
   if (Object.keys(validation.errors).length) {
     return {
       errors: validation.errors,
+      payload: null,
       publication: null,
     };
   }
 
-  const existingPublication = currentId
-    ? publications.find((publication) => publication.id === currentId) ?? null
-    : null;
+  const preview = {
+    abstract: normalizeText(values.abstract),
+    authors: validation.authors,
+    citations: validation.citations,
+    createdAt: existingPublication?.createdAt ?? new Date().toISOString(),
+    doi: normalizeText(values.doi),
+    entryType: normalizeText(values.entryType),
+    id: currentId ?? existingPublication?.id ?? '',
+    isLocalOnly: false,
+    journal: normalizeText(values.journal),
+    pdfLink: normalizeText(values.pdfLink),
+    publisher: normalizeText(values.publisher),
+    slug: buildUniqueSlug(validation.normalizedSlug, publications, currentId),
+    status: normalizeText(values.status),
+    teamSlug: validation.selectedTeam.slug,
+    themes: validation.themes,
+    title: normalizeText(values.title),
+    updatedAt: new Date().toISOString(),
+    year: validation.year,
+  };
 
   return {
     errors: {},
-    publication: {
-      abstract: normalizeText(values.abstract),
-      authors: validation.authors,
-      citations: validation.citations,
-      createdAt: existingPublication?.createdAt ?? new Date().toISOString(),
-      doi: normalizeText(values.doi),
-      entryType: normalizeText(values.entryType),
-      id: currentId ?? `local-publication-${Date.now()}`,
-      isLocalOnly: existingPublication?.isLocalOnly ?? true,
-      journal: normalizeText(values.journal),
-      pdfLink: normalizeText(values.pdfLink),
-      publisher: normalizeText(values.publisher),
-      slug: buildUniqueSlug(validation.normalizedSlug, publications, currentId),
-      status: normalizeText(values.status),
-      teamSlug: validation.selectedTeam.slug,
-      themes: validation.themes,
-      title: normalizeText(values.title),
-      updatedAt: new Date().toISOString(),
-      year: validation.year,
+    payload: {
+      abstract: preview.abstract,
+      authors: preview.authors,
+      citations: preview.citations,
+      doi: preview.doi,
+      entryType: preview.entryType,
+      journal: preview.journal,
+      pdfLink: preview.pdfLink,
+      publisher: preview.publisher,
+      slug: preview.slug,
+      status: preview.status,
+      teamSlug: preview.teamSlug,
+      themes: preview.themes,
+      title: preview.title,
+      year: preview.year,
     },
+    publication: preview,
   };
-}
-
-export function createAdminPublicationDraft(values, publications, teams) {
-  const result = buildStoredPublicationFromForm(values, publications, teams);
-
-  if (!result.publication) {
-    return result;
-  }
-
-  const nextPublications = [result.publication, ...publications];
-  writeStoredPublications(nextPublications);
-
-  return {
-    errors: {},
-    publication: result.publication,
-    publications: nextPublications,
-  };
-}
-
-export function updateAdminPublicationDraft(publicationId, values, publications, teams) {
-  const result = buildStoredPublicationFromForm(values, publications, teams, publicationId);
-
-  if (!result.publication) {
-    return result;
-  }
-
-  const nextPublications = publications.map((publication) => (
-    publication.id === publicationId ? result.publication : publication
-  ));
-  writeStoredPublications(nextPublications);
-
-  return {
-    errors: {},
-    publication: result.publication,
-    publications: nextPublications,
-  };
-}
-
-export function deleteAdminPublicationDraft(publicationId, publications) {
-  const nextPublications = publications.filter((publication) => publication.id !== publicationId);
-  writeStoredPublications(nextPublications);
-  return nextPublications;
 }
 
 function enrichPublication(publication, teams) {
@@ -339,30 +271,40 @@ export function useAdminPublicationDrafts(sourcePublications, teams) {
       sourcePublications.map((publication) => toStoredPublicationRecord(publication, teams)),
     [sourcePublications, teams],
   );
-  const [publications, setPublications] = useState([]);
+  const [publications, setPublications] = useState(normalizedSourcePublications);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const syncPublications = () => {
-      const nextPublications = ensureSeededPublications(normalizedSourcePublications);
-      setPublications(nextPublications);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncPublications();
+    async function loadPublications() {
+      try {
+        const records = await fetchAdminContentCollection('publication', abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setPublications(records.map((publication) => toStoredPublicationRecord(publication, teams)));
+      } catch {
+        if (!isCancelled) {
+          setPublications(normalizedSourcePublications);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncPublications);
-    window.addEventListener('storage', syncPublications);
+    loadPublications();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncPublications);
-      window.removeEventListener('storage', syncPublications);
+      isCancelled = true;
+      abortController.abort();
     };
-  }, [normalizedSourcePublications]);
+  }, [normalizedSourcePublications, teams]);
 
   const enrichedPublications = useMemo(
     () =>
@@ -378,28 +320,112 @@ export function useAdminPublicationDrafts(sourcePublications, teams) {
     findPublicationBySlug(slug) {
       return enrichedPublications.find((publication) => publication.slug === slug) ?? null;
     },
-    createPublication(values) {
-      const result = createAdminPublicationDraft(values, publications, teams);
+    async createPublication(values) {
+      const result = buildStoredPublicationFromForm(values, publications, teams);
 
-      if (result.publications) {
-        setPublications(result.publications);
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
-    },
-    updatePublication(publicationId, values) {
-      const result = updateAdminPublicationDraft(publicationId, values, publications, teams);
+      try {
+        const savedPublication = await createAdminContentItem('publication', result.payload);
+        const normalizedPublication = toStoredPublicationRecord(savedPublication, teams);
+        const nextPublications = [normalizedPublication, ...publications];
+        setPublications(nextPublications);
+        recordAdminActivity({
+          action: 'publication.create',
+          afterSnapshot: normalizedPublication,
+          entityId: normalizedPublication.id,
+          entityLabel: normalizedPublication.title,
+          entityType: 'publication',
+          summary: `${normalizedPublication.title} was added to the protected publication desk.`,
+        });
 
-      if (result.publications) {
-        setPublications(result.publications);
+        return {
+          errors: {},
+          publication: enrichPublication(normalizedPublication, teams),
+          publications: nextPublications,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The publication could not be created.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          publication: null,
+        };
+      }
+    },
+    async updatePublication(publicationId, values) {
+      const previousPublication = publications.find((publication) => publication.id === publicationId) ?? null;
+      const result = buildStoredPublicationFromForm(values, publications, teams, publicationId, previousPublication);
+
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
+      try {
+        const savedPublication = await updateAdminContentItem('publication', publicationId, result.payload);
+        const normalizedPublication = toStoredPublicationRecord(savedPublication, teams);
+        const nextPublications = publications.map((publication) => (
+          publication.id === publicationId ? normalizedPublication : publication
+        ));
+        setPublications(nextPublications);
+        recordAdminActivity({
+          action: 'publication.update',
+          afterSnapshot: normalizedPublication,
+          beforeSnapshot: previousPublication,
+          entityId: normalizedPublication.id,
+          entityLabel: normalizedPublication.title,
+          entityType: 'publication',
+          summary: `${normalizedPublication.title} was updated in the protected publication desk.`,
+        });
+
+        return {
+          errors: {},
+          publication: enrichPublication(normalizedPublication, teams),
+          publications: nextPublications,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The publication could not be updated.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          publication: null,
+        };
+      }
     },
-    deletePublication(publicationId) {
-      const nextPublications = deleteAdminPublicationDraft(publicationId, publications);
-      setPublications(nextPublications);
-      return nextPublications;
+    async deletePublication(publicationId) {
+      const previousPublication = publications.find((publication) => publication.id === publicationId) ?? null;
+
+      try {
+        await deleteAdminContentItem('publication', publicationId);
+        const nextPublications = publications.filter((publication) => publication.id !== publicationId);
+        setPublications(nextPublications);
+
+        if (previousPublication) {
+          recordAdminActivity({
+            action: 'publication.delete',
+            beforeSnapshot: previousPublication,
+            entityId: previousPublication.id,
+            entityLabel: previousPublication.title,
+            entityType: 'publication',
+            summary: `${previousPublication.title} was removed from the protected publication desk.`,
+          });
+        }
+
+        return {
+          error: '',
+          publications: nextPublications,
+        };
+      } catch (error) {
+        return {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected publication could not be deleted.',
+          publications,
+        };
+      }
     },
   };
 }

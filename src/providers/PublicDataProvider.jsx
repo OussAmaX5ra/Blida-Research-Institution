@@ -1,5 +1,8 @@
 import { useEffect, useEffectEvent, useState, useTransition } from 'react';
-import { fetchPublicCollections } from '../lib/public-api';
+import {
+  fetchPublicCollections,
+  PUBLIC_DATA_INVALIDATED_EVENT,
+} from '../lib/public-api';
 import { PublicDataContext } from './PublicDataContext.js';
 
 const emptyCollections = {
@@ -11,7 +14,14 @@ const emptyCollections = {
   gallery: [],
 };
 
+const emptySiteContext = {
+  contactInfo: null,
+  labInfo: null,
+  researchAxes: [],
+};
+
 const emptyMeta = {
+  siteContext: {},
   teams: {},
   members: {},
   projects: {},
@@ -24,6 +34,7 @@ function PublicDataProvider({ children }) {
   const [state, setState] = useState({
     collections: emptyCollections,
     meta: emptyMeta,
+    siteContext: emptySiteContext,
     status: 'idle',
     error: '',
   });
@@ -63,6 +74,7 @@ function PublicDataProvider({ children }) {
             gallery: payload.gallery.data,
           },
           meta: {
+            siteContext: payload.siteContext.meta,
             teams: payload.teams.meta,
             members: payload.members.meta,
             projects: payload.projects.meta,
@@ -70,6 +82,7 @@ function PublicDataProvider({ children }) {
             news: payload.news.meta,
             gallery: payload.gallery.meta,
           },
+          siteContext: payload.siteContext.data ?? emptySiteContext,
           status: hasSuccessfulCollection ? 'ready' : 'error',
           error: collectionErrors.join(' '),
         });
@@ -95,6 +108,23 @@ function PublicDataProvider({ children }) {
 
     return () => {
       abortController.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleRefreshRequest = () => {
+      const abortController = new AbortController();
+      loadPublicData(abortController.signal);
+    };
+
+    window.addEventListener(PUBLIC_DATA_INVALIDATED_EVENT, handleRefreshRequest);
+
+    return () => {
+      window.removeEventListener(PUBLIC_DATA_INVALIDATED_EVENT, handleRefreshRequest);
     };
   }, []);
 

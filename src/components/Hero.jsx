@@ -1,7 +1,11 @@
 import { ArrowDown, ChevronRight, Microscope } from 'lucide-react';
-import { labInfo } from '../data/mockData';
+import { usePublicData } from '../providers/usePublicData';
+import { fallbackLabInfo } from '../lib/site-context';
 
 export default function Hero() {
+  const { siteContext } = usePublicData();
+  const labInfo = siteContext?.labInfo ?? fallbackLabInfo;
+
   return (
     <section
       id="about"
@@ -63,7 +67,7 @@ export default function Hero() {
 
             {/* Research axes */}
             <div className="flex flex-wrap gap-2 mb-10 animate-fade-up delay-300">
-              {labInfo.axes.map(axis => (
+              {(labInfo.axes ?? []).map(axis => (
                 <span key={axis}
                       className="px-3 py-1 text-xs font-medium rounded-full"
                       style={{ background: 'rgba(26,92,107,0.3)', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(42,127,147,0.3)' }}>
@@ -92,7 +96,7 @@ export default function Hero() {
 
           {/* Right: Stats cards */}
           <div className="grid grid-cols-2 gap-4 animate-fade-up delay-300">
-            {labInfo.stats.map((stat, i) => (
+            {(labInfo.stats ?? []).map((stat, i) => (
               <div key={stat.label}
                    className="p-6 rounded-sm transition-transform duration-300 hover:-translate-y-1"
                    style={{

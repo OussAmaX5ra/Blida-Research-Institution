@@ -3,14 +3,15 @@ import { ArrowLeft, Layers3, Save, ShieldAlert, Sparkles, Trash2 } from 'lucide-
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import AdminToast from '../../components/admin/AdminToast.jsx';
+import { validateAdminFormOnServer } from '../../lib/admin-form-validation-api.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
 import {
   slugifyTeamName,
   useAdminTeamDrafts,
   validateTeamDraft,
 } from '../../lib/admin-team-drafts.js';
+import { fallbackSiteContext } from '../../lib/site-context.js';
 import { usePublicData } from '../../providers/usePublicData.js';
-import { researchAxes } from '../../data/mockData.js';
 
 function buildInitialValues(team) {
   if (!team) {
@@ -116,8 +117,10 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
     error,
     hasLoaded,
     isLoading,
+    siteContext = fallbackSiteContext,
   } = usePublicData();
-  const { createTeam, deleteTeam, findTeamBySlug, isReady, teams, updateTeam } = useAdminTeamDrafts(sourceTeams);
+  const researchAxes = siteContext.researchAxes ?? [];
+  const { createTeam, deleteTeam, findTeamBySlug, isReady, teams, updateTeam } = useAdminTeamDrafts(sourceTeams, researchAxes);
   const existingTeam = mode === 'edit' ? findTeamBySlug(teamSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingTeam));
   const [errors, setErrors] = useState({});
@@ -220,7 +223,7 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validation = validateTeamDraft(values, teams, existingTeam?.id ?? null);
 
@@ -237,13 +240,26 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
       return;
     }
 
-    const result = mode === 'create'
+    const serverValidation = await validateAdminFormOnServer('team', values);
+
+    if (Object.keys(serverValidation.errors ?? {}).length) {
+      setErrors(serverValidation.errors);
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this team draft.');
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Team not created' : 'Team not saved',
+        message: 'Protected validation rejected the current team values. Review the highlighted fields and try again.',
+      });
+      return;
+    }
+
+    const result = await (mode === 'create'
       ? createTeam(values)
-      : updateTeam(existingTeam.id, values);
+      : updateTeam(existingTeam.id, values));
 
     if (Object.keys(result.errors ?? {}).length) {
       setErrors(result.errors);
-      setGlobalMessage('The team could not be saved yet. Review the highlighted fields and try again.');
+      setGlobalMessage(result.message ?? 'The team could not be saved yet. Review the highlighted fields and try again.');
       setLocalToast({
         type: 'error',
         title: mode === 'create' ? 'Team not created' : 'Team not saved',
@@ -264,13 +280,19 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
     onNavigate(event, '/admin/teams');
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!existingTeam || deleteConfirmation !== existingTeam.slug) {
       setGlobalMessage('Type the exact team slug before confirming the delete workflow.');
       return;
     }
 
-    deleteTeam(existingTeam.id);
+    const result = await deleteTeam(existingTeam.id);
+
+    if (result.error) {
+      setGlobalMessage(result.error);
+      return;
+    }
+
     setIsDeleteOpen(false);
     setDeleteConfirmation('');
     onNavigate({ preventDefault() {}, defaultPrevented: false, button: 0 }, '/admin/teams');

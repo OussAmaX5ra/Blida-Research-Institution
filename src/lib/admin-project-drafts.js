@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 
-const STORAGE_KEY = 'research-lab.admin-project-drafts.v1';
-const STORAGE_EVENT = 'research-lab:admin-project-drafts:change';
+import {
+  createAdminContentItem,
+  deleteAdminContentItem,
+  fetchAdminContentCollection,
+  mapAdminApiError,
+  updateAdminContentItem,
+} from './admin-content-api.js';
+import { recordAdminActivity } from './admin-activity-log.js';
+
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
 const ALLOWED_STATUSES = new Set(['Planned', 'Ongoing', 'Completed']);
-
-function canUseStorage() {
-  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
-}
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -33,34 +36,6 @@ export function slugifyProjectTitle(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function readStoredProjects() {
-  if (!canUseStorage()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredProjects(projects) {
-  if (!canUseStorage()) {
-    return;
-  }
-
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  window.dispatchEvent(new CustomEvent(STORAGE_EVENT));
-}
-
 function toStoredProjectRecord(project) {
   return {
     axisId: project.axisId ?? project.axis?.id ?? '',
@@ -79,22 +54,6 @@ function toStoredProjectRecord(project) {
     updatedAt: project.updatedAt ?? new Date().toISOString(),
     year: Number(project.year) || new Date().getFullYear(),
   };
-}
-
-function ensureSeededProjects(sourceProjects) {
-  const storedProjects = readStoredProjects();
-
-  if (storedProjects?.length) {
-    return storedProjects;
-  }
-
-  if (!sourceProjects.length) {
-    return [];
-  }
-
-  const seededProjects = sourceProjects.map((project) => toStoredProjectRecord(project));
-  writeStoredProjects(seededProjects);
-  return seededProjects;
 }
 
 function buildUniqueSlug(slug, projects, currentId) {
@@ -167,80 +126,52 @@ export function validateProjectDraft(values, projects, teams, currentId) {
   };
 }
 
-function buildStoredProjectFromForm(values, projects, teams, currentId = null) {
+function buildStoredProjectFromForm(values, projects, teams, currentId = null, existingProject = null) {
   const validation = validateProjectDraft(values, projects, teams, currentId);
 
   if (Object.keys(validation.errors).length) {
     return {
       errors: validation.errors,
+      payload: null,
       project: null,
     };
   }
 
-  const existingProject = currentId
-    ? projects.find((project) => project.id === currentId) ?? null
-    : null;
+  const preview = {
+    axisId: validation.selectedTeam?.axis?.id ?? validation.selectedTeam?.axisId ?? '',
+    createdAt: existingProject?.createdAt ?? new Date().toISOString(),
+    id: currentId ?? existingProject?.id ?? '',
+    lead: normalizeText(values.lead),
+    leadMemberSlug: normalizeText(values.leadMemberSlug),
+    milestone: normalizeText(values.milestone),
+    phdLinked: Boolean(values.phdLinked),
+    slug: buildUniqueSlug(validation.normalizedSlug, projects, currentId),
+    status: normalizeText(values.status),
+    summary: normalizeText(values.summary),
+    teamSlug: validation.selectedTeam.slug,
+    themes: validation.themes,
+    title: normalizeText(values.title),
+    updatedAt: new Date().toISOString(),
+    year: validation.year,
+  };
 
   return {
     errors: {},
-    project: {
-      axisId: validation.selectedTeam?.axis?.id ?? validation.selectedTeam?.axisId ?? '',
-      createdAt: existingProject?.createdAt ?? new Date().toISOString(),
-      id: currentId ?? `local-project-${Date.now()}`,
-      lead: normalizeText(values.lead),
-      leadMemberSlug: normalizeText(values.leadMemberSlug),
-      milestone: normalizeText(values.milestone),
-      phdLinked: Boolean(values.phdLinked),
-      slug: buildUniqueSlug(validation.normalizedSlug, projects, currentId),
-      status: normalizeText(values.status),
-      summary: normalizeText(values.summary),
-      teamSlug: validation.selectedTeam.slug,
-      themes: validation.themes,
-      title: normalizeText(values.title),
-      updatedAt: new Date().toISOString(),
-      year: validation.year,
+    payload: {
+      lead: preview.lead,
+      leadMemberSlug: preview.leadMemberSlug,
+      milestone: preview.milestone,
+      phdLinked: preview.phdLinked,
+      slug: preview.slug,
+      status: preview.status,
+      summary: preview.summary,
+      teamSlug: preview.teamSlug,
+      themes: preview.themes,
+      title: preview.title,
+      year: preview.year,
     },
+    project: preview,
   };
-}
-
-export function createAdminProjectDraft(values, projects, teams) {
-  const result = buildStoredProjectFromForm(values, projects, teams);
-
-  if (!result.project) {
-    return result;
-  }
-
-  const nextProjects = [result.project, ...projects];
-  writeStoredProjects(nextProjects);
-
-  return {
-    errors: {},
-    project: result.project,
-    projects: nextProjects,
-  };
-}
-
-export function updateAdminProjectDraft(projectId, values, projects, teams) {
-  const result = buildStoredProjectFromForm(values, projects, teams, projectId);
-
-  if (!result.project) {
-    return result;
-  }
-
-  const nextProjects = projects.map((project) => (project.id === projectId ? result.project : project));
-  writeStoredProjects(nextProjects);
-
-  return {
-    errors: {},
-    project: result.project,
-    projects: nextProjects,
-  };
-}
-
-export function deleteAdminProjectDraft(projectId, projects) {
-  const nextProjects = projects.filter((project) => project.id !== projectId);
-  writeStoredProjects(nextProjects);
-  return nextProjects;
 }
 
 function enrichProject(project, teams, members) {
@@ -262,28 +193,38 @@ export function useAdminProjectDrafts(sourceProjects, teams, members) {
     () => sourceProjects.map((project) => toStoredProjectRecord(project)),
     [sourceProjects],
   );
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState(normalizedSourceProjects);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const syncProjects = () => {
-      const nextProjects = ensureSeededProjects(normalizedSourceProjects);
-      setProjects(nextProjects);
-      setIsReady(true);
-    };
+    let isCancelled = false;
+    const abortController = new AbortController();
 
-    syncProjects();
+    async function loadProjects() {
+      try {
+        const records = await fetchAdminContentCollection('project', abortController.signal);
 
-    if (!canUseStorage()) {
-      return undefined;
+        if (isCancelled) {
+          return;
+        }
+
+        setProjects(records.map((project) => toStoredProjectRecord(project)));
+      } catch {
+        if (!isCancelled) {
+          setProjects(normalizedSourceProjects);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsReady(true);
+        }
+      }
     }
 
-    window.addEventListener(STORAGE_EVENT, syncProjects);
-    window.addEventListener('storage', syncProjects);
+    loadProjects();
 
     return () => {
-      window.removeEventListener(STORAGE_EVENT, syncProjects);
-      window.removeEventListener('storage', syncProjects);
+      isCancelled = true;
+      abortController.abort();
     };
   }, [normalizedSourceProjects]);
 
@@ -301,28 +242,110 @@ export function useAdminProjectDrafts(sourceProjects, teams, members) {
     findProjectBySlug(slug) {
       return enrichedProjects.find((project) => project.slug === slug) ?? null;
     },
-    createProject(values) {
-      const result = createAdminProjectDraft(values, projects, teams);
+    async createProject(values) {
+      const result = buildStoredProjectFromForm(values, projects, teams);
 
-      if (result.projects) {
-        setProjects(result.projects);
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
-    },
-    updateProject(projectId, values) {
-      const result = updateAdminProjectDraft(projectId, values, projects, teams);
+      try {
+        const savedProject = await createAdminContentItem('project', result.payload);
+        const normalizedProject = toStoredProjectRecord(savedProject);
+        const nextProjects = [normalizedProject, ...projects];
+        setProjects(nextProjects);
+        recordAdminActivity({
+          action: 'project.create',
+          afterSnapshot: normalizedProject,
+          entityId: normalizedProject.id,
+          entityLabel: normalizedProject.title,
+          entityType: 'project',
+          summary: `${normalizedProject.title} was added to the protected project board.`,
+        });
 
-      if (result.projects) {
-        setProjects(result.projects);
+        return {
+          errors: {},
+          project: enrichProject(normalizedProject, teams, members),
+          projects: nextProjects,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The project could not be created.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          project: null,
+        };
+      }
+    },
+    async updateProject(projectId, values) {
+      const previousProject = projects.find((project) => project.id === projectId) ?? null;
+      const result = buildStoredProjectFromForm(values, projects, teams, projectId, previousProject);
+
+      if (!result.payload) {
+        return result;
       }
 
-      return result;
+      try {
+        const savedProject = await updateAdminContentItem('project', projectId, result.payload);
+        const normalizedProject = toStoredProjectRecord(savedProject);
+        const nextProjects = projects.map((project) => (project.id === projectId ? normalizedProject : project));
+        setProjects(nextProjects);
+        recordAdminActivity({
+          action: 'project.update',
+          afterSnapshot: normalizedProject,
+          beforeSnapshot: previousProject,
+          entityId: normalizedProject.id,
+          entityLabel: normalizedProject.title,
+          entityType: 'project',
+          summary: `${normalizedProject.title} was updated in the protected project board.`,
+        });
+
+        return {
+          errors: {},
+          project: enrichProject(normalizedProject, teams, members),
+          projects: nextProjects,
+        };
+      } catch (error) {
+        const apiError = mapAdminApiError(error, 'The project could not be updated.');
+        return {
+          errors: apiError.errors,
+          message: apiError.message,
+          project: null,
+        };
+      }
     },
-    deleteProject(projectId) {
-      const nextProjects = deleteAdminProjectDraft(projectId, projects);
-      setProjects(nextProjects);
-      return nextProjects;
+    async deleteProject(projectId) {
+      const previousProject = projects.find((project) => project.id === projectId) ?? null;
+
+      try {
+        await deleteAdminContentItem('project', projectId);
+        const nextProjects = projects.filter((project) => project.id !== projectId);
+        setProjects(nextProjects);
+
+        if (previousProject) {
+          recordAdminActivity({
+            action: 'project.delete',
+            beforeSnapshot: previousProject,
+            entityId: previousProject.id,
+            entityLabel: previousProject.title,
+            entityType: 'project',
+            summary: `${previousProject.title} was removed from the protected project board.`,
+          });
+        }
+
+        return {
+          error: '',
+          projects: nextProjects,
+        };
+      } catch (error) {
+        return {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'The selected project could not be deleted.',
+          projects,
+        };
+      }
     },
   };
 }

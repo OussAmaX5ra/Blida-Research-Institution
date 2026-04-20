@@ -11,6 +11,7 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import AdminToast from '../../components/admin/AdminToast.jsx';
+import { validateAdminFormOnServer } from '../../lib/admin-form-validation-api.js';
 import {
   slugifyNewsHeadline,
   useAdminNewsDrafts,
@@ -257,7 +258,7 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
     updateField('teamSlugs', nextSlugs);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const validation = validateNewsDraft(values, news, teams, existingNews?.id ?? null);
 
@@ -270,6 +271,19 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
         message: mode === 'create'
           ? 'The story could not be created yet. Review the highlighted fields and try again.'
           : 'The story could not be saved yet. Review the highlighted fields and try again.',
+      });
+      return;
+    }
+
+    const serverValidation = await validateAdminFormOnServer('news', values);
+
+    if (Object.keys(serverValidation.errors ?? {}).length) {
+      setErrors(serverValidation.errors);
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this story draft.');
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Story not created' : 'Story not saved',
+        message: 'Protected validation rejected the current story values. Review the highlighted fields and try again.',
       });
       return;
     }

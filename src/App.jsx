@@ -34,6 +34,7 @@ import AdminSectionPage from './pages/admin/AdminSectionPage.jsx';
 import { useAdminSession } from './providers/useAdminSession.js';
 import { usePublicData } from './providers/usePublicData.js';
 import { applyDocumentMetadata, buildRouteMetadata } from './site/documentMetadata';
+import AdminActivityPage from './pages/admin/AdminActivityPage.jsx';
 
 function replacePath(nextPath) {
   window.history.replaceState({}, '', nextPath);
@@ -196,6 +197,9 @@ export default function App() {
   const adminUsersPage = currentRoute?.id === 'admin-users'
     ? <AdminUsersPage />
     : null;
+  const adminActivityPage = currentRoute?.id === 'admin-activity'
+    ? <AdminActivityPage />
+    : null;
   const adminTeamCreatePage = currentRoute?.id === 'admin-team-create'
     ? <AdminTeamFormPage mode="create" onNavigate={handleNavigate} />
     : null;
@@ -241,6 +245,7 @@ export default function App() {
     currentRoute.id !== 'admin-news' &&
     currentRoute.id !== 'admin-gallery' &&
     currentRoute.id !== 'admin-users' &&
+    currentRoute.id !== 'admin-activity' &&
     currentRoute.id !== 'admin-team-create' &&
     currentRoute.id !== 'admin-team-edit' &&
     currentRoute.id !== 'admin-member-create' &&
@@ -299,6 +304,7 @@ export default function App() {
             adminNewsPage ??
             adminGalleryPage ??
             adminUsersPage ??
+            adminActivityPage ??
             adminTeamCreatePage ??
             adminTeamEditPage ??
             adminMemberCreatePage ??

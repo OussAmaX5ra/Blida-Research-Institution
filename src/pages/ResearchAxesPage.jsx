@@ -10,8 +10,8 @@ import {
   Sparkles,
   Users2,
 } from 'lucide-react';
-import { labInfo, researchAxes } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const axisIcons = {
@@ -260,6 +260,7 @@ export default function ResearchAxesPage({ onNavigate }) {
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
 
   if (!hasLoaded && isLoading) {
@@ -283,6 +284,8 @@ export default function ResearchAxesPage({ onNavigate }) {
     );
   }
 
+  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const researchAxes = siteContext.researchAxes ?? [];
   const totalProjects = teams.reduce((sum, team) => sum + team.projectCount, 0);
   const totalPublications = teams.reduce((sum, team) => sum + team.publicationCount, 0);
   const totalResearchers = teams.reduce((sum, team) => sum + team.memberCount, 0);

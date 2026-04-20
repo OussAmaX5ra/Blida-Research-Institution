@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { connectToDatabase, disconnectFromDatabase } from "./db/mongoose.js";
+import { ensureDefaultContentSeeded } from "./seed/ensure-default-content.js";
 
 const app = createApp();
 const server = createServer(app);
@@ -25,6 +26,7 @@ function getStartupMessage(error) {
 
 async function startServer() {
   await connectToDatabase();
+  await ensureDefaultContentSeeded();
 
   return new Promise((resolve) => {
     server.listen(env.PORT, () => {

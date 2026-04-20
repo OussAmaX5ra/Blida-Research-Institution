@@ -6,8 +6,8 @@ import {
   Microscope,
   Users2,
 } from 'lucide-react';
-import { labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const institutionalValues = [
@@ -88,6 +88,7 @@ export default function AboutPage({ onNavigate }) {
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
 
   if (!hasLoaded && isLoading) {
@@ -111,6 +112,7 @@ export default function AboutPage({ onNavigate }) {
     );
   }
 
+  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
   const highlightedOutputs = publications.slice(0, 2);
 
   return (

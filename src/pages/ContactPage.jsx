@@ -9,8 +9,8 @@ import {
   ShieldCheck,
   Users2,
 } from 'lucide-react';
-import { contactInfo, labInfo } from '../data/mockData';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
+import { fallbackContactInfo, fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const visitChecklist = [
@@ -98,6 +98,7 @@ export default function ContactPage({ onNavigate }) {
     hasLoaded,
     isLoading,
     retry,
+    siteContext,
   } = usePublicData();
 
   if (!hasLoaded && isLoading) {
@@ -121,6 +122,8 @@ export default function ContactPage({ onNavigate }) {
     );
   }
 
+  const contactInfo = siteContext.contactInfo ?? fallbackContactInfo;
+  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
   const contactSnapshot = [
     {
       label: 'Research teams',
@@ -464,8 +467,8 @@ export default function ContactPage({ onNavigate }) {
               {
                 icon: Mail,
                 label: 'Official Mailbox',
-                value: contactInfo.email,
-                href: `mailto:${contactInfo.email}`,
+                value: contactInfo.email || 'Contact email unavailable',
+                href: contactInfo.email ? `mailto:${contactInfo.email}` : '/contact',
               },
             ].map((item) => {
               const isInternal = item.href.startsWith('/');

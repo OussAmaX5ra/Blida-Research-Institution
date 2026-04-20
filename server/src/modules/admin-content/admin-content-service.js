@@ -10,6 +10,7 @@ import { Team } from "../../models/team.js";
 import { User } from "../../models/user.js";
 import { AppError } from "../../utils/app-error.js";
 import { hashPassword } from "../../utils/password.js";
+import { hasPermission, RBAC_PERMISSIONS } from "../../utils/rbac.js";
 import { adminContentSchemas } from "../../validators/admin-content-schemas.js";
 
 const ENTITY_MODELS = {
@@ -188,6 +189,35 @@ async function validateEntityInput(entityType, values, currentId = "") {
   return parsedValues;
 }
 
+const PUBLISH_PERMISSION_BY_ENTITY = {
+  gallery: RBAC_PERMISSIONS.GALLERY_PUBLISH,
+  news: RBAC_PERMISSIONS.NEWS_PUBLISH,
+  publication: RBAC_PERMISSIONS.PUBLICATIONS_PUBLISH,
+};
+
+function assertPublishedStatusAllowed(user, entityType, validatedValues, previousStatus) {
+  const publishKey = PUBLISH_PERMISSION_BY_ENTITY[entityType];
+  if (!publishKey || !user?.role) {
+    return;
+  }
+
+  if (validatedValues.status !== "Published") {
+    return;
+  }
+
+  const wasPublished = previousStatus === "Published";
+  if (wasPublished) {
+    return;
+  }
+
+  if (!hasPermission(user.role, publishKey)) {
+    throw new AppError("You do not have permission to publish this record.", {
+      code: "FORBIDDEN",
+      statusCode: 403,
+    });
+  }
+}
+
 function serializeAdminRecord(record) {
   if (!record) {
     return null;
@@ -226,9 +256,10 @@ export async function listAdminContent(entityType) {
   };
 }
 
-export async function createAdminContent(entityType, values) {
+export async function createAdminContent(entityType, values, user) {
   const model = getEntityModel(entityType);
   const validatedValues = await validateEntityInput(entityType, values);
+  assertPublishedStatusAllowed(user, entityType, validatedValues, null);
 
   try {
     const createdRecord = await model.create(validatedValues);
@@ -245,7 +276,7 @@ export async function createAdminContent(entityType, values) {
   }
 }
 
-export async function updateAdminContent(entityType, id, values) {
+export async function updateAdminContent(entityType, id, values, user) {
   const model = getEntityModel(entityType);
   const existingRecord = await model.findById(id).lean();
 
@@ -257,6 +288,7 @@ export async function updateAdminContent(entityType, id, values) {
   }
 
   const validatedValues = await validateEntityInput(entityType, values, id);
+  assertPublishedStatusAllowed(user, entityType, validatedValues, existingRecord.status);
 
   try {
     const updatedRecord = await model

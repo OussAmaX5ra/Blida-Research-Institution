@@ -7,7 +7,6 @@ import {
   Users2,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const institutionalValues = [
@@ -112,7 +111,12 @@ export default function AboutPage({ onNavigate }) {
     );
   }
 
-  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const labInfo = siteContext.labInfo ?? {
+    acronym: '',
+    mission: '',
+    name: '',
+    vision: '',
+  };
   const highlightedOutputs = publications.slice(0, 2);
 
   return (

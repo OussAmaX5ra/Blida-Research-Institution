@@ -11,6 +11,7 @@ import {
 } from '../../lib/admin-member-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const roleOptions = ['Professor', 'Doctor', 'PhD Student'];
@@ -110,8 +111,8 @@ function MemberFormSidebar({ values, assignedTeams, mode }) {
           Workflow note
         </div>
         <p className="admin-body-copy">
-          Member records currently save into the protected browser-side admin draft store. That keeps
-          the CRUD loop working while backend member endpoints are still pending.
+          Saving calls the admin API; records persist in MongoDB and the public member directory
+          refreshes after a successful write.
         </p>
       </article>
     </div>
@@ -124,9 +125,14 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
     error,
     hasLoaded,
     isLoading,
+    siteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(
+    sourceTeams,
+    siteContext.researchAxes ?? [],
+  );
   const { createMember, deleteMember, findMemberBySlug, isReady, members, updateMember } = useAdminMemberDrafts(sourceMembers, teams);
+  const { canDelete } = useAdminAbilities();
   const existingMember = mode === 'edit' ? findMemberBySlug(memberSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingMember));
   const [errors, setErrors] = useState({});
@@ -176,7 +182,7 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
           <p className="admin-section-kicker">Member Form</p>
           <h3>Loading the protected member form.</h3>
           <p className="admin-body-copy">
-            The member and team draft stores are initializing before the form can render.
+            Loading member and team data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -200,9 +206,9 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Member</p>
-          <h3>This member draft could not be found.</h3>
+          <h3>This member could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin member registry. Return to the members list
+            The slug no longer exists in the database-backed member list. Return to the members list
             and choose another record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/members')}>
@@ -261,44 +267,73 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
       return;
     }
 
-    const serverValidation = await validateAdminFormOnServer('member', values);
+    try {
+      const serverValidation = await validateAdminFormOnServer('member', values);
 
-    if (Object.keys(serverValidation.errors ?? {}).length) {
-      setErrors(serverValidation.errors);
-      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this member draft.');
-      setLocalToast({
-        type: 'error',
-        title: mode === 'create' ? 'Member not created' : 'Member not saved',
-        message: 'Protected validation rejected the current member values. Review the highlighted fields and try again.',
-      });
-      return;
-    }
+      if (Object.keys(serverValidation.errors ?? {}).length) {
+        setErrors(serverValidation.errors);
+        setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this member.');
+        setLocalToast({
+          type: 'error',
+          title: mode === 'create' ? 'Member not created' : 'Member not saved',
+          message:
+            serverValidation.message
+            ?? 'Validation rejected the current values. Review the highlighted fields and try again.',
+        });
+        return;
+      }
 
-    const result = mode === 'create'
-      ? createMember(values)
-      : updateMember(existingMember.id, values);
+      const result = await (mode === 'create'
+        ? createMember(values)
+        : updateMember(existingMember.id, values));
 
-    if (Object.keys(result.errors ?? {}).length) {
-      setErrors(result.errors);
-      setGlobalMessage('The member could not be saved yet. Review the highlighted fields and try again.');
-      setLocalToast({
-        type: 'error',
-        title: mode === 'create' ? 'Member not created' : 'Member not saved',
+      if (Object.keys(result.errors ?? {}).length) {
+        setErrors(result.errors);
+        setGlobalMessage(
+          result.message ?? 'The member could not be saved yet. Review the highlighted fields and try again.',
+        );
+        setLocalToast({
+          type: 'error',
+          title: mode === 'create' ? 'Member not created' : 'Member not saved',
+          message: mode === 'create'
+            ? 'The member could not be created yet. Review the highlighted fields and try again.'
+            : 'The member could not be saved yet. Review the highlighted fields and try again.',
+        });
+        return;
+      }
+
+      if (!result.member) {
+        const failMessage =
+          result.message
+          ?? (mode === 'create' ? 'The member could not be created.' : 'The member could not be saved.');
+        setErrors({});
+        setGlobalMessage(failMessage);
+        setLocalToast({
+          type: 'error',
+          title: mode === 'create' ? 'Member not created' : 'Member not saved',
+          message: failMessage,
+        });
+        return;
+      }
+
+      queueAdminToast({
+        type: 'success',
+        title: mode === 'create' ? 'Member created' : 'Member updated',
         message: mode === 'create'
-          ? 'The member could not be created yet. Review the highlighted fields and try again.'
-          : 'The member could not be saved yet. Review the highlighted fields and try again.',
+          ? `${result.member.name} was created successfully.`
+          : `${result.member.name} was saved successfully.`,
       });
-      return;
+      onNavigate(event, '/admin/members');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not reach the server or save the member.';
+      setErrors({});
+      setGlobalMessage(message);
+      setLocalToast({
+        type: 'error',
+        title: mode === 'create' ? 'Member not created' : 'Member not saved',
+        message,
+      });
     }
-
-    queueAdminToast({
-      type: 'success',
-      title: mode === 'create' ? 'Member created' : 'Member updated',
-      message: mode === 'create'
-        ? `${result.member.name} was created successfully.`
-        : `${result.member.name} was saved successfully.`,
-    });
-    onNavigate(event, '/admin/members');
   }
 
   function handleDeleteConfirm() {
@@ -322,10 +357,10 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Member' : 'Edit Member'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected member draft.' : `Refine ${existingMember.name}.`}</h3>
+              <h3>{mode === 'create' ? 'Add a member to the database.' : `Edit ${existingMember.name}`}</h3>
               <p className="admin-body-copy">
-                Capture role, academic framing, expertise, and team assignment here. The protected
-                roster updates immediately once this member draft is saved.
+                Capture role, academic framing, expertise, and team assignment. The roster updates after
+                the server accepts the save.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/members')}>
@@ -341,7 +376,7 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
             </div>
           ) : null}
 
-          <form className="admin-form-layout" onSubmit={handleSubmit}>
+          <form className="admin-form-layout" noValidate onSubmit={handleSubmit}>
             <div className="admin-form-grid">
               <MemberFormField label="Member name" error={errors.name}>
                 <input value={values.name} onChange={(event) => updateField('name', event.target.value)} />
@@ -380,7 +415,13 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
               </MemberFormField>
 
               <MemberFormField label="Email" error={errors.email}>
-                <input type="email" value={values.email} onChange={(event) => updateField('email', event.target.value)} />
+                <input
+                  type="text"
+                  inputMode="email"
+                  autoComplete="email"
+                  value={values.email}
+                  onChange={(event) => updateField('email', event.target.value)}
+                />
               </MemberFormField>
 
               <MemberFormField label="Primary team" error={errors.primaryTeamSlug}>
@@ -447,20 +488,20 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save member draft' : 'Save member changes'}
+                {mode === 'create' ? 'Create member' : 'Save changes'}
               </button>
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('member') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
                 Danger zone
               </div>
               <p className="admin-body-copy">
-                Deleting this member removes the record from the protected admin member registry.
-                Type the member slug to confirm before the draft is removed.
+                Deleting this member removes the record from the database.
+                Type the member slug to confirm.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -478,7 +519,7 @@ export default function AdminMemberFormPage({ mode, onNavigate, memberSlug = '' 
         confirmValue={deleteConfirmation}
         description={
           existingMember
-            ? `This removes ${existingMember.name} from the protected member draft store. Type "${existingMember.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingMember.name} from the database. Type "${existingMember.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the member slug to confirm"

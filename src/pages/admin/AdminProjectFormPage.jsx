@@ -20,6 +20,7 @@ import {
 import { useAdminMemberDrafts } from '../../lib/admin-member-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOptions = ['Planned', 'Ongoing', 'Completed'];
@@ -136,8 +137,8 @@ function ProjectFormSidebar({ eligibleLeadMembers, mode, selectedTeam, values })
           Workflow note
         </div>
         <p className="admin-body-copy">
-          Project records currently save into the protected browser-side admin draft store, matching
-          the existing team and member CRUD flow until backend project endpoints are wired.
+          Saves persist to MongoDB via the admin API; the public projects listing updates after the
+          cache refreshes.
         </p>
       </article>
     </div>
@@ -150,11 +151,16 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
     error,
     hasLoaded,
     isLoading,
+    siteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(
+    sourceTeams,
+    siteContext.researchAxes ?? [],
+  );
   const { isReady: areMembersReady, members } = useAdminMemberDrafts(sourceMembers, teams);
   const { createProject, deleteProject, findProjectBySlug, isReady, projects, updateProject } =
     useAdminProjectDrafts(sourceProjects, teams, members);
+  const { canDelete } = useAdminAbilities();
   const existingProject = mode === 'edit' ? findProjectBySlug(projectSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingProject));
   const [errors, setErrors] = useState({});
@@ -212,7 +218,7 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
           <p className="admin-section-kicker">Project Form</p>
           <h3>Loading the protected project form.</h3>
           <p className="admin-body-copy">
-            The project, team, and member draft stores are initializing before the form can render.
+            Loading project, team, and member data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -236,10 +242,10 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Project</p>
-          <h3>This project draft could not be found.</h3>
+          <h3>This project could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin project registry. Return to the
-            projects list and choose another record.
+            The slug no longer exists in the database. Return to the projects list and choose another
+            record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/projects')}>
             <ArrowLeft size={15} />
@@ -306,7 +312,7 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
 
     if (Object.keys(serverValidation.errors ?? {}).length) {
       setErrors(serverValidation.errors);
-      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this project draft.');
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this project.');
       setLocalToast({
         type: 'error',
         title: mode === 'create' ? 'Project not created' : 'Project not saved',
@@ -315,9 +321,9 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
       return;
     }
 
-    const result = mode === 'create'
+    const result = await (mode === 'create'
       ? createProject(values)
-      : updateProject(existingProject.id, values);
+      : updateProject(existingProject.id, values));
 
     if (Object.keys(result.errors ?? {}).length) {
       setErrors(result.errors);
@@ -363,10 +369,10 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Project' : 'Edit Project'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected project draft.' : `Refine ${existingProject.title}.`}</h3>
+              <h3>{mode === 'create' ? 'Create a project.' : `Edit ${existingProject.title}`}</h3>
               <p className="admin-body-copy">
-                Capture team ownership, lead assignment, milestone context, and research themes here.
-                The protected projects desk updates immediately once this draft is saved.
+                Capture team ownership, lead assignment, milestone context, and research themes.
+                Saves persist to MongoDB; the public projects listing updates after the cache refreshes.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/projects')}>
@@ -512,20 +518,20 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save project draft' : 'Save project changes'}
+                {mode === 'create' ? 'Create project' : 'Save changes'}
               </button>
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('project') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
                 Danger zone
               </div>
               <p className="admin-body-copy">
-                Deleting this project removes the record from the protected admin project registry.
-                Type the project slug to confirm before the draft is removed.
+                Deleting this project removes the record from the database. Type the project slug to
+                confirm.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -548,7 +554,7 @@ export default function AdminProjectFormPage({ mode, onNavigate, projectSlug = '
         confirmValue={deleteConfirmation}
         description={
           existingProject
-            ? `This removes ${existingProject.title} from the protected project draft store. Type "${existingProject.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingProject.title} from the database. Type "${existingProject.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the project slug to confirm"

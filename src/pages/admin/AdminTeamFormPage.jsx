@@ -10,7 +10,7 @@ import {
   useAdminTeamDrafts,
   validateTeamDraft,
 } from '../../lib/admin-team-drafts.js';
-import { fallbackSiteContext } from '../../lib/site-context.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 function buildInitialValues(team) {
@@ -103,8 +103,7 @@ function FormSidebar({ values, mode, matchedAxis }) {
           Workflow note
         </div>
         <p className="admin-body-copy">
-          This form currently saves to the protected admin draft store in the browser. That keeps
-          the CRUD flow fully usable while the backend team endpoints are still pending.
+          Saving persists the team in MongoDB through the admin API and refreshes public data.
         </p>
       </article>
     </div>
@@ -117,10 +116,11 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
     error,
     hasLoaded,
     isLoading,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const researchAxes = siteContext.researchAxes ?? [];
   const { createTeam, deleteTeam, findTeamBySlug, isReady, teams, updateTeam } = useAdminTeamDrafts(sourceTeams, researchAxes);
+  const { canDelete } = useAdminAbilities();
   const existingTeam = mode === 'edit' ? findTeamBySlug(teamSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingTeam));
   const [errors, setErrors] = useState({});
@@ -168,9 +168,9 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide">
           <p className="admin-section-kicker">Team Form</p>
-          <h3>Loading the protected team form.</h3>
+          <h3>Loading the team form.</h3>
           <p className="admin-body-copy">
-            The admin draft store is initializing before the team workflow can render.
+            Loading team data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -194,10 +194,10 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Team</p>
-          <h3>This team draft could not be found.</h3>
+          <h3>This team could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin draft store. Return to the teams list
-            and choose another record.
+            The slug no longer exists in the database. Return to the teams list and choose another
+            record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/teams')}>
             <ArrowLeft size={15} />
@@ -307,10 +307,10 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Team' : 'Edit Team'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected team draft.' : `Refine ${existingTeam.name}.`}</h3>
+              <h3>{mode === 'create' ? 'Create a team record.' : `Edit ${existingTeam.name}`}</h3>
               <p className="admin-body-copy">
-                Capture the public identity, leadership, and research framing of the team here. The
-                admin list view will update immediately once this draft is saved.
+                Capture the public identity, leadership, and research framing. Changes persist in MongoDB
+                and refresh the public site data after save.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/teams')}>
@@ -424,20 +424,19 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save team draft' : 'Save team changes'}
+                {mode === 'create' ? 'Create team' : 'Save changes'}
               </button>
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('team') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
                 Danger zone
               </div>
               <p className="admin-body-copy">
-                Deleting this team removes it from the protected admin draft registry. Type the team
-                slug to confirm before the draft is removed.
+                Deleting this team removes it from the database. Type the team slug to confirm.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -455,7 +454,7 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
         confirmValue={deleteConfirmation}
         description={
           existingTeam
-            ? `This removes ${existingTeam.name} from the admin draft store. Type "${existingTeam.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingTeam.name} from the database. Type "${existingTeam.slug}" to confirm.`
             : ''
         }
         isOpen={isDeleteOpen}

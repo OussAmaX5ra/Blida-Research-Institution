@@ -58,13 +58,17 @@ export async function refreshAdminSession(signal) {
   return payload?.user ?? null;
 }
 
-export async function loadCurrentAdmin(signal) {
+export async function loadCurrentAdmin(signal, { attemptRefresh = true } = {}) {
   try {
     return await fetchCurrentAdmin(signal);
   } catch (error) {
     if (error?.status !== 401) {
       throw error;
     }
+  }
+
+  if (!attemptRefresh) {
+    return null;
   }
 
   await refreshAdminSession(signal);

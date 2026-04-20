@@ -27,6 +27,8 @@ Additional auth, security, and deployment variables can be added as those tasks 
 - `npm run create-admin -- --email=admin@example.com --allowUpdate=true --fullName=\"Updated Name\"` updates an existing admin account intentionally
 - `npm run dev` starts the backend in watch mode
 - `npm run start` starts the backend once
+- `npm run seed-content -- --file=./path/to/content.json [--replace]` manually seeds content from a JSON file
+- `npm run verify:content` verifies collection counts and minimum content integrity checks
 - `npm run verify:milestone1` runs a repeatable Milestone 1 verification pass against auth, RBAC, security headers, and rate limits
 
 ## Current Bootstrap

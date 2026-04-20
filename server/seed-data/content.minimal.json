@@ -1,0 +1,57 @@
+{
+  "siteConfig": {
+    "_id": "default",
+    "contactInfo": {
+      "campus": "Main campus",
+      "city": "Blida",
+      "directions": [],
+      "email": "contact@example.org",
+      "office": "Research wing",
+      "officeHours": [],
+      "outreachTracks": [],
+      "phone": "+213-000-000-000",
+      "responseWindow": "Within 5 business days"
+    },
+    "labInfo": {
+      "acronym": "BRI",
+      "axes": [],
+      "founded": 2020,
+      "mission": "Placeholder mission text for initial seed.",
+      "name": "Blida Research Institute",
+      "stats": [],
+      "vision": "Placeholder vision text for initial seed."
+    },
+    "researchAxes": [
+      {
+        "accent": "#1a5c6b",
+        "id": "axis-sample",
+        "methods": [],
+        "name": "Sample research axis",
+        "outcomes": [],
+        "position": "1",
+        "shortLabel": "SMP",
+        "summary": "Short summary used only to satisfy schema for seeding.",
+        "teamAcronyms": []
+      }
+    ]
+  },
+  "teams": [
+    {
+      "acronym": "SMP",
+      "axisId": "axis-sample",
+      "color": "#1a5c6b",
+      "focus": "Sample focus area for the seeded team.",
+      "leader": "Principal Investigator",
+      "name": "Sample Team",
+      "slug": "sample-team",
+      "status": "active",
+      "summary": "Sample team summary for database seeding.",
+      "themes": ["Research", "Demo"]
+    }
+  ],
+  "members": [],
+  "projects": [],
+  "publications": [],
+  "news": [],
+  "gallery": []
+}

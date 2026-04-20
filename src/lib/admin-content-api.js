@@ -35,8 +35,11 @@ function mapValidationError(error) {
   const details = Array.isArray(error?.details) ? error.details : [];
   return Object.fromEntries(
     details
-      .filter((detail) => detail?.path)
-      .map((detail) => [detail.path, detail.message]),
+      .filter((detail) => typeof detail?.path === 'string' && detail.path.length > 0)
+      .map((detail) => {
+        const root = detail.path.includes('.') ? detail.path.split('.')[0] : detail.path;
+        return [root, detail.message ?? 'This field is invalid.'];
+      }),
   );
 }
 

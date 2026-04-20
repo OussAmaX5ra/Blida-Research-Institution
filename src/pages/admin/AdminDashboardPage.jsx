@@ -1,19 +1,8 @@
-import {
-  AlarmClockCheck,
-  BookCopy,
-  ChartNoAxesCombined,
-  History,
-  ShieldCheck,
-  Siren,
-} from 'lucide-react';
+import { useMemo } from 'react';
+import { BookCopy, ChartNoAxesCombined, History, ShieldCheck } from 'lucide-react';
 
-import {
-  adminApprovalTimeline,
-  adminDashboardMetrics,
-  adminDeskNotes,
-  adminQuickActions,
-} from '../../data/adminData.js';
 import { useAdminActivityLog } from '../../lib/admin-activity-log.js';
+import { usePublicData } from '../../providers/usePublicData.js';
 
 function formatActivityTime(value) {
   const date = new Date(value);
@@ -30,38 +19,102 @@ function formatActivityTime(value) {
   });
 }
 
+const EDITORIAL_QUEUE = new Set(['Review', 'Draft']);
+
+function countEditorialQueue(news, publications, gallery) {
+  const n = news.filter((item) => EDITORIAL_QUEUE.has(item.status)).length;
+  const p = publications.filter((item) => EDITORIAL_QUEUE.has(item.status)).length;
+  const g = gallery.filter((item) => EDITORIAL_QUEUE.has(item.status)).length;
+  return n + p + g;
+}
+
 export default function AdminDashboardPage() {
+  const { collections } = usePublicData();
   const { entries } = useAdminActivityLog();
-  const recentActivity = entries.slice(0, 4);
+  const recentActivity = entries.slice(0, 6);
+
+  const metrics = useMemo(() => {
+    const {
+      teams = [],
+      members = [],
+      projects = [],
+      publications = [],
+      news = [],
+      gallery = [],
+    } = collections;
+
+    const contentTotal =
+      publications.length + news.length + gallery.length + projects.length;
+    const editorialQueue = countEditorialQueue(news, publications, gallery);
+
+    return [
+      {
+        change: `${teams.length} research teams`,
+        label: 'Teams',
+        tone: 'up',
+        value: String(teams.length),
+      },
+      {
+        change: `${members.length} people`,
+        label: 'Members',
+        tone: 'neutral',
+        value: String(members.length),
+      },
+      {
+        change: `${contentTotal} across projects, publications, news, gallery`,
+        label: 'Content records',
+        tone: 'warn',
+        value: String(contentTotal),
+      },
+      {
+        change:
+          editorialQueue > 0
+            ? `${editorialQueue} not yet published`
+            : 'Nothing waiting in Review/Draft',
+        label: 'Editorial queue',
+        tone: editorialQueue > 0 ? 'down' : 'up',
+        value: String(editorialQueue),
+      },
+    ];
+  }, [collections]);
+
+  const briefing = useMemo(() => {
+    const { projects = [], publications = [], news = [], gallery = [] } = collections;
+    return [
+      {
+        body: `${projects.length} project${projects.length === 1 ? '' : 's'} in the database with team and year metadata.`,
+        title: 'Projects',
+      },
+      {
+        body: `${publications.length} publication${publications.length === 1 ? '' : 's'} indexed for the public bibliography.`,
+        title: 'Publications',
+      },
+      {
+        body: `${news.length} news stor${news.length === 1 ? 'y' : 'ies'} and ${gallery.length} gallery entr${gallery.length === 1 ? 'y' : 'ies'}.`,
+        title: 'News & gallery',
+      },
+    ];
+  }, [collections]);
 
   return (
     <section className="admin-editorial-grid">
       <article className="admin-editorial-card admin-editorial-card-wide">
-        <p className="admin-section-kicker">Editorial Mission Control</p>
-        <h3>Institutional signal is strong, but approval flow is slipping.</h3>
+        <p className="admin-section-kicker">Admin overview</p>
+        <h3>Content is loaded from the API and stored in MongoDB.</h3>
         <p className="admin-body-copy">
-          The admin side now has its own visual system and a protected shell. From here, Milestone 3
-          can grow into real content workflows without borrowing the public site’s browsing patterns.
+          Counts below reflect the same collections that power the public site. Use the navigation to
+          create or edit records; successful saves call the protected admin API and invalidate the
+          public cache.
         </p>
-        <div className="admin-callout-row">
-          <div>
-            <span className="admin-callout-label">Priority desk</span>
-            <strong>Publication review</strong>
-          </div>
-          <div>
-            <span className="admin-callout-label">Risk horizon</span>
-            <strong>DOI mismatch on 2 records</strong>
-          </div>
-        </div>
       </article>
 
       <article className="admin-editorial-card">
         <div className="admin-panel-heading">
           <ShieldCheck size={16} />
-          Signal board
+          Live inventory
         </div>
         <div className="admin-metric-grid">
-          {adminDashboardMetrics.map((metric) => (
+          {metrics.map((metric) => (
             <div key={metric.label} className={`admin-metric-chip admin-metric-${metric.tone}`}>
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
@@ -74,10 +127,10 @@ export default function AdminDashboardPage() {
       <article className="admin-editorial-card">
         <div className="admin-panel-heading">
           <BookCopy size={16} />
-          Morning briefing
+          Collection snapshot
         </div>
         <div className="admin-note-list">
-          {adminDeskNotes.map((note) => (
+          {briefing.map((note) => (
             <div key={note.title} className="admin-note-item">
               <h4>{note.title}</h4>
               <p>{note.body}</p>
@@ -105,60 +158,21 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <p className="admin-body-copy">
-            The audit stream will appear here as soon as protected admin actions are recorded.
+            Content saves and deletes will appear here as you work in this browser (local activity log).
           </p>
         )}
       </article>
 
       <article className="admin-editorial-card">
         <div className="admin-panel-heading">
-          <AlarmClockCheck size={16} />
-          Approval clock
-        </div>
-        <div className="admin-timeline-list">
-          {adminApprovalTimeline.map((entry) => (
-            <div key={entry.time + entry.item} className="admin-timeline-row">
-              <time>{entry.time}</time>
-              <div>
-                <strong>{entry.item}</strong>
-                <span>{entry.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </article>
-
-      <article className="admin-editorial-card admin-editorial-card-alert">
-        <div className="admin-panel-heading">
-          <Siren size={16} />
-          Visible risk
+          <ChartNoAxesCombined size={16} />
+          Data flow
         </div>
         <p className="admin-body-copy">
-          One high-traffic publication still points to a placeholder PDF, and the homepage hero
-          references a story card whose category tag has not yet been normalized.
-        </p>
-        <div className="admin-quick-list">
-          {adminQuickActions.map((action) => (
-            <span key={action}>{action}</span>
-          ))}
-        </div>
-      </article>
-
-      <article className="admin-editorial-card">
-        <div className="admin-panel-heading">
-          <ChartNoAxesCombined size={16} />
-          Review tempo
-        </div>
-        <div className="admin-tempo-bars" aria-label="Review tempo chart">
-          <div style={{ '--bar-height': '46%' }} />
-          <div style={{ '--bar-height': '68%' }} />
-          <div style={{ '--bar-height': '54%' }} />
-          <div style={{ '--bar-height': '88%' }} />
-          <div style={{ '--bar-height': '73%' }} />
-          <div style={{ '--bar-height': '59%' }} />
-        </div>
-        <p className="admin-chart-note">
-          Pace is strongest when news and publications are reviewed on the same editorial cycle.
+          Public pages read from <code className="text-sm">/api/public</code> aggregates. Admin forms
+          write through <code className="text-sm">/api/admin/content/…</code> with validation. After a
+          successful write, the public data provider refreshes so the site stays aligned with the
+          database.
         </p>
       </article>
     </section>

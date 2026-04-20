@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import AdminToast from './AdminToast.jsx';
+import { filterAdminNavRoutes } from '../../lib/admin-permission-utils.js';
 import { consumeQueuedAdminToast } from '../../lib/admin-toast.js';
 import { adminPrimaryNavigation } from '../../site/publicRouteMap';
 import { getRouteBranch, isRouteActive } from '../../site/publicRouting';
@@ -57,6 +58,7 @@ export default function AdminShell({
   children,
 }) {
   const [toast, setToast] = useState(null);
+  const filteredNav = filterAdminNavRoutes(adminPrimaryNavigation, user);
 
   useEffect(() => {
     const queuedToast = consumeQueuedAdminToast();
@@ -107,7 +109,7 @@ export default function AdminShell({
           >
             <span>Dashboard</span>
           </a>
-          {adminPrimaryNavigation.map((route) => (
+          {filteredNav.map((route) => (
             <AdminNavLink
               key={route.id}
               route={route}

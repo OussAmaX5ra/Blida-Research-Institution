@@ -584,8 +584,7 @@ export default function AdminUsersPage() {
           <p className="admin-section-kicker">Access Control</p>
           <h3>Loading the protected account registry.</h3>
           <p className="admin-body-copy">
-            The user draft store is initializing role, status, and password workflow data before the
-            access desk can render.
+            Loading admin accounts from the API before the access desk can render.
           </p>
         </article>
       </section>
@@ -685,8 +684,8 @@ export default function AdminUsersPage() {
 
           <div className="admin-note-list">
             <div className="admin-note-item">
-              <h4>Activation, deactivation, and role assignment now save into the protected local user draft store.</h4>
-              <p>The workflow is persistent inside the browser so you can review status changes as part of the admin experience before backend account CRUD is wired.</p>
+              <h4>Activation, deactivation, and role assignment persist in the database.</h4>
+              <p>Changes call the protected users API and update MongoDB-backed admin accounts.</p>
             </div>
             <div className="admin-note-item">
               <h4>Password resets issue one-time temporary credentials in the dialog.</h4>

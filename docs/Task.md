@@ -179,6 +179,6 @@ Prepare the platform for stable, secure, accessible, and production-ready deploy
 - `[x]` Task tracker created: `Task.md`
 - `[x]` Implementation started
 - `[x]` Public frontend and backend are connected through `/api/*` endpoints
-- `[x]` Shared mock data has been extracted into `shared/` for cross-runtime use
-- `[ ]` Public content is database-backed
+- `[x]` Public content is database-backed
+- `[x]` Runtime mock-data imports removed from server and client
 - `[ ]` Production-ready release achieved

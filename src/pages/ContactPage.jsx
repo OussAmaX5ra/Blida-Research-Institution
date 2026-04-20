@@ -10,7 +10,6 @@ import {
   Users2,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { fallbackContactInfo, fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const visitChecklist = [
@@ -122,8 +121,21 @@ export default function ContactPage({ onNavigate }) {
     );
   }
 
-  const contactInfo = siteContext.contactInfo ?? fallbackContactInfo;
-  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const contactInfo = siteContext.contactInfo ?? {
+    campus: '',
+    city: '',
+    directions: [],
+    email: '',
+    office: '',
+    officeHours: [],
+    outreachTracks: [],
+    phone: '',
+    responseWindow: '',
+  };
+  const labInfo = siteContext.labInfo ?? {
+    acronym: '',
+    name: '',
+  };
   const contactSnapshot = [
     {
       label: 'Research teams',

@@ -358,10 +358,9 @@ export default function AdminActivityPage() {
           Milestone note
         </div>
         <p className="admin-body-copy">
-          This audit stream is intentionally browser-backed for the current Milestone 3 admin
-          architecture, which still uses protected local draft stores for most CRUD workflows. It
-          gives the admin portal meaningful accountability now and creates a clean handoff point for
-          later database-backed audit persistence.
+          Content changes are persisted in MongoDB via the admin API. This stream is a lightweight
+          client-side log of actions in this browser; add a server-side audit collection if you need
+          durable compliance history.
         </p>
       </article>
     </section>

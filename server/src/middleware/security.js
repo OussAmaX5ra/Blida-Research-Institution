@@ -1,6 +1,16 @@
 import helmet from "helmet";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
+import { env } from "../config/env.js";
+
+/** Global /api limiter: each page load + admin save triggers many requests (public collections, admin lists, validation, etc.). */
+const apiRateLimitMax =
+  typeof process.env.API_RATE_LIMIT_MAX === "string" && process.env.API_RATE_LIMIT_MAX.trim() !== ""
+    ? Number.parseInt(process.env.API_RATE_LIMIT_MAX, 10)
+    : env.NODE_ENV === "development"
+      ? 5000
+      : 800;
+
 function sendRateLimitResponse(response, details) {
   response.status(429).json({
     error: {
@@ -28,7 +38,7 @@ export const apiRateLimiter = rateLimit({
     });
   },
   legacyHeaders: false,
-  limit: 200,
+  limit: Number.isFinite(apiRateLimitMax) && apiRateLimitMax > 0 ? apiRateLimitMax : 800,
   skip: (request) => request.path === "/api/health",
   standardHeaders: true,
   windowMs: 15 * 60 * 1000,
@@ -49,7 +59,24 @@ export const publicApiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
 });
 
+function authRouteSubPath(request) {
+  const base = request.baseUrl ?? "";
+  const path = request.path ?? "";
+  if (base === "/api/admin/auth" && path) {
+    return path;
+  }
+  const full = request.originalUrl?.split("?")[0] ?? "";
+  if (full.startsWith("/api/admin/auth/")) {
+    return full.slice("/api/admin/auth".length) || "/";
+  }
+  return path;
+}
+
 export const authRouteRateLimiter = rateLimit({
+  skip: (request) => {
+    const sub = authRouteSubPath(request);
+    return sub === "/me" || sub === "/refresh" || sub === "/login";
+  },
   handler: (_request, response) => {
     sendRateLimitResponse(response, {
       scope: "auth",
@@ -57,7 +84,46 @@ export const authRouteRateLimiter = rateLimit({
     });
   },
   legacyHeaders: false,
-  limit: 20,
+  limit: env.NODE_ENV === "development" ? 200 : 60,
+  standardHeaders: true,
+  windowMs: 15 * 60 * 1000,
+});
+
+export const adminSessionReadRateLimiter = rateLimit({
+  handler: (_request, response) => {
+    sendRateLimitResponse(response, {
+      scope: "auth-session-read",
+      windowMs: 15 * 60 * 1000,
+    });
+  },
+  legacyHeaders: false,
+  limit: 300,
+  standardHeaders: true,
+  windowMs: 15 * 60 * 1000,
+});
+
+export const authRefreshRateLimiter = rateLimit({
+  handler: (_request, response) => {
+    sendRateLimitResponse(response, {
+      scope: "auth-refresh",
+      windowMs: 15 * 60 * 1000,
+    });
+  },
+  legacyHeaders: false,
+  limit: 120,
+  standardHeaders: true,
+  windowMs: 15 * 60 * 1000,
+});
+
+export const authLoginRouteRateLimiter = rateLimit({
+  handler: (_request, response) => {
+    sendRateLimitResponse(response, {
+      scope: "auth-login-route",
+      windowMs: 15 * 60 * 1000,
+    });
+  },
+  legacyHeaders: false,
+  limit: 40,
   standardHeaders: true,
   windowMs: 15 * 60 * 1000,
 });

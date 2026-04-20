@@ -5,14 +5,15 @@ function mapValidationDetailsToFieldErrors(details) {
 
   return details.reduce((errors, detail) => {
     const path = typeof detail?.path === 'string' ? detail.path : '';
+    const root = path.includes('.') ? path.split('.')[0] : path;
 
-    if (!path || errors[path]) {
+    if (!root || errors[root]) {
       return errors;
     }
 
     return {
       ...errors,
-      [path]: detail.message ?? 'This field is invalid.',
+      [root]: detail.message ?? 'This field is invalid.',
     };
   }, {});
 }

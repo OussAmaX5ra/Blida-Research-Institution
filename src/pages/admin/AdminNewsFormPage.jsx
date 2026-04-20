@@ -19,6 +19,7 @@ import {
 } from '../../lib/admin-news-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOptions = ['Draft', 'Review', 'Published'];
@@ -131,8 +132,8 @@ function NewsFormSidebar({ linkedTeams, mode, values }) {
           Workflow note
         </div>
         <p className="admin-body-copy">
-          Story records currently save into the protected browser-side admin draft store. That keeps
-          the CRUD loop working while backend news endpoints are still pending.
+          Saves persist to MongoDB via the admin API; the public news feed updates after the cache
+          refreshes.
         </p>
       </article>
     </div>
@@ -145,9 +146,14 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
     error,
     hasLoaded,
     isLoading,
+    siteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(
+    sourceTeams,
+    siteContext.researchAxes ?? [],
+  );
   const { createNews, deleteNews, findNewsBySlug, isReady, news, updateNews } = useAdminNewsDrafts(sourceNews, teams);
+  const { canDelete, canPublish } = useAdminAbilities();
   const existingNews = mode === 'edit' ? findNewsBySlug(newsSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingNews));
   const [errors, setErrors] = useState({});
@@ -190,6 +196,21 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
     [teams, values.teamSlugs],
   );
 
+  const canPublishNews = canPublish('news');
+  const newsStatusLocked = mode === 'edit' && existingNews?.status === 'Published' && !canPublishNews;
+
+  const newsStatusChoices = useMemo(() => {
+    if (canPublishNews) {
+      return statusOptions;
+    }
+
+    if (newsStatusLocked) {
+      return ['Published'];
+    }
+
+    return statusOptions.filter((status) => status !== 'Published');
+  }, [canPublishNews, newsStatusLocked]);
+
   if ((!hasLoaded && isLoading) || !isReady || !areTeamsReady) {
     return (
       <section className="admin-teams-grid">
@@ -197,7 +218,7 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
           <p className="admin-section-kicker">News Form</p>
           <h3>Loading the protected story form.</h3>
           <p className="admin-body-copy">
-            The news and team draft stores are initializing before the form can render.
+            Loading news and team data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -221,10 +242,10 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Story</p>
-          <h3>This story draft could not be found.</h3>
+          <h3>This story could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin news registry. Return to the news list
-            and choose another record.
+            The slug no longer exists in the database. Return to the news list and choose another
+            record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/news')}>
             <ArrowLeft size={15} />
@@ -279,7 +300,7 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
 
     if (Object.keys(serverValidation.errors ?? {}).length) {
       setErrors(serverValidation.errors);
-      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this story draft.');
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this story.');
       setLocalToast({
         type: 'error',
         title: mode === 'create' ? 'Story not created' : 'Story not saved',
@@ -288,9 +309,9 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
       return;
     }
 
-    const result = mode === 'create'
+    const result = await (mode === 'create'
       ? createNews(values)
-      : updateNews(existingNews.id, values);
+      : updateNews(existingNews.id, values));
 
     if (Object.keys(result.errors ?? {}).length) {
       setErrors(result.errors);
@@ -336,10 +357,10 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Story' : 'Edit Story'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected story draft.' : `Refine ${existingNews.headline}.`}</h3>
+              <h3>{mode === 'create' ? 'Create a news story.' : `Edit ${existingNews.headline}`}</h3>
               <p className="admin-body-copy">
-                Capture the headline, category, schedule, linked teams, image, excerpt, and full story body here.
-                The protected news desk updates immediately once this draft is saved.
+                Capture the headline, category, schedule, linked teams, image, excerpt, and full story body.
+                Saves persist to MongoDB; the public feed updates after the cache refreshes.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/news')}>
@@ -376,13 +397,19 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
               </NewsFormField>
 
               <NewsFormField label="Status" error={errors.status}>
-                <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                {newsStatusLocked ? (
+                  <p className="admin-body-copy">
+                    <strong>Published</strong> — only accounts with publish permission can change this state.
+                  </p>
+                ) : (
+                  <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
+                    {newsStatusChoices.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </NewsFormField>
 
               <NewsFormField label="Publish date" error={errors.dateIso}>
@@ -451,12 +478,12 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save story draft' : 'Save story changes'}
+                {mode === 'create' ? 'Create story' : 'Save changes'}
               </button>
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('news') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
@@ -464,7 +491,7 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
               </div>
               <p className="admin-body-copy">
                 Deleting this story removes the record from the protected admin news registry.
-                Type the story slug to confirm before the draft is removed.
+                Type the story slug to confirm deletion.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -482,7 +509,7 @@ export default function AdminNewsFormPage({ mode, onNavigate, newsSlug = '' }) {
         confirmValue={deleteConfirmation}
         description={
           existingNews
-            ? `This removes ${existingNews.headline} from the protected news draft store. Type "${existingNews.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingNews.headline} from the database. Type "${existingNews.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the story slug to confirm"

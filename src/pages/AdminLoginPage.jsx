@@ -9,7 +9,6 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { recordAdminActivity } from '../lib/admin-activity-log.js';
-import { fallbackContactInfo, fallbackLabInfo } from '../lib/site-context.js';
 import { loginAdmin } from '../lib/admin-auth-api.js';
 import { useAdminSession } from '../providers/useAdminSession.js';
 import { usePublicData } from '../providers/usePublicData.js';
@@ -22,8 +21,8 @@ export default function AdminLoginPage({ onNavigate }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [authenticatedUser, setAuthenticatedUser] = useState(null);
-  const contactInfo = siteContext.contactInfo ?? fallbackContactInfo;
-  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const contactInfo = siteContext.contactInfo ?? { officeHours: [] };
+  const labInfo = siteContext.labInfo ?? { acronym: '', name: '' };
 
   async function handleSubmit(event) {
     event.preventDefault();

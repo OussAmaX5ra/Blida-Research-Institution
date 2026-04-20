@@ -13,10 +13,10 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminMemberDrafts } from '../../lib/admin-member-drafts.js';
 import { useAdminProjectDrafts } from '../../lib/admin-project-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOrder = ['Ongoing', 'Planned', 'Completed'];
@@ -75,6 +75,7 @@ function ProjectToolbar({
   statusCounts,
   teamOptions,
   yearOptions,
+  canCreateProject,
 }) {
   return (
     <>
@@ -169,14 +170,16 @@ function ProjectToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/projects/new')}
-            >
-              <Plus size={15} />
-              Add project
-            </button>
+            {canCreateProject ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/projects/new')}
+              >
+                <Plus size={15} />
+                Add project
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -184,7 +187,7 @@ function ProjectToolbar({
   );
 }
 
-function ProjectCard({ onDeleteRequest, onNavigate, project }) {
+function ProjectCard({ canDeleteProject, onDeleteRequest, onNavigate, project }) {
   return (
     <article className="admin-team-row">
       <div className="admin-team-row-header">
@@ -208,14 +211,16 @@ function ProjectCard({ onDeleteRequest, onNavigate, project }) {
             <PencilLine size={14} />
             Edit project
           </button>
-          <button
-            type="button"
-            className="admin-inline-link admin-inline-link-danger"
-            onClick={() => onDeleteRequest(project)}
-          >
-            <Trash2 size={14} />
-            Delete project
-          </button>
+          {canDeleteProject ? (
+            <button
+              type="button"
+              className="admin-inline-link admin-inline-link-danger"
+              onClick={() => onDeleteRequest(project)}
+            >
+              <Trash2 size={14} />
+              Delete project
+            </button>
+          ) : null}
           {project.team ? (
             <a
               href={`/teams/${project.team.slug}`}
@@ -279,11 +284,12 @@ export default function AdminProjectsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { isReady: areMembersReady, members } = useAdminMemberDrafts(sourceMembers, teams);
   const { deleteProject, isReady, projects } = useAdminProjectDrafts(sourceProjects, teams, members);
+  const { canCreate, canDelete } = useAdminAbilities();
   const [pendingDeleteProject, setPendingDeleteProject] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -369,6 +375,7 @@ export default function AdminProjectsPage({ onNavigate }) {
     <>
       <section className="admin-teams-grid">
         <ProjectToolbar
+          canCreateProject={canCreate('project')}
           isRefreshing={isRefreshing}
           onNavigate={onNavigate}
           onRefresh={retry}
@@ -420,6 +427,7 @@ export default function AdminProjectsPage({ onNavigate }) {
               {filteredProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
+                  canDeleteProject={canDelete('project')}
                   onDeleteRequest={(entry) => {
                     setPendingDeleteProject(entry);
                     setDeleteConfirmation('');
@@ -446,7 +454,7 @@ export default function AdminProjectsPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeleteProject
-            ? `This removes ${pendingDeleteProject.title} from the protected project draft store. Type "${pendingDeleteProject.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeleteProject.title} from the database. Type "${pendingDeleteProject.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the project slug to confirm"

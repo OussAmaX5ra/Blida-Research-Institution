@@ -1,10 +1,16 @@
 import { ArrowDown, ChevronRight, Microscope } from 'lucide-react';
 import { usePublicData } from '../providers/usePublicData';
-import { fallbackLabInfo } from '../lib/site-context';
 
 export default function Hero() {
   const { siteContext } = usePublicData();
-  const labInfo = siteContext?.labInfo ?? fallbackLabInfo;
+  const labInfo = siteContext?.labInfo ?? {
+    axes: [],
+    founded: '',
+    mission: '',
+    name: '',
+    stats: [],
+    vision: '',
+  };
 
   return (
     <section

@@ -9,7 +9,6 @@ import {
   Users2,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
@@ -159,7 +158,14 @@ export default function HomePage({ onNavigate }) {
     );
   }
 
-  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const labInfo = siteContext.labInfo ?? {
+    acronym: '',
+    founded: '',
+    mission: '',
+    name: '',
+    stats: [],
+    vision: '',
+  };
   const featuredFaculty = members.slice(0, 4).map((member) => ({
     avatar: member.avatar,
     expertise: member.expertise,

@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -219,7 +220,7 @@ export function useAdminGalleryDrafts(sourceGallery, teams) {
     () => sourceGallery.map((item) => toStoredGalleryRecord(item, teams)),
     [sourceGallery, teams],
   );
-  const [gallery, setGallery] = useState(normalizedSourceGallery);
+  const [gallery, setGallery] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -234,7 +235,8 @@ export function useAdminGalleryDrafts(sourceGallery, teams) {
           return;
         }
 
-        setGallery(records.map((item) => toStoredGalleryRecord(item, teams)));
+        const fromApi = records.map((item) => toStoredGalleryRecord(item, teams));
+        setGallery(mergeRecordsBySlug(normalizedSourceGallery, fromApi));
       } catch {
         if (!isCancelled) {
           setGallery(normalizedSourceGallery);

@@ -146,7 +146,7 @@ adminContentRouter.post(
     try {
       response
         .status(201)
-        .json(await createAdminContent(request.validated.params.entityType, request.body));
+        .json(await createAdminContent(request.validated.params.entityType, request.body, request.user));
     } catch (error) {
       next(error);
     }
@@ -163,7 +163,7 @@ adminContentRouter.put(
   async (request, response, next) => {
     try {
       const { entityType, id } = request.validated.params;
-      response.status(200).json(await updateAdminContent(entityType, id, request.body));
+      response.status(200).json(await updateAdminContent(entityType, id, request.body, request.user));
     } catch (error) {
       next(error);
     }

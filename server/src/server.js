@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { connectToDatabase, disconnectFromDatabase } from "./db/mongoose.js";
-import { ensureDefaultContentSeeded } from "./seed/ensure-default-content.js";
+import { logError, logInfo, redactMongoUri } from "./lib/logger.js";
 
 const app = createApp();
 const server = createServer(app);
@@ -15,7 +15,7 @@ function getStartupMessage(error) {
   if (error?.name === "MongooseServerSelectionError") {
     return [
       "Failed to start server: MongoDB is unreachable.",
-      `Configured URI: ${env.MONGODB_URI}`,
+      `Configured URI (redacted): ${redactMongoUri(env.MONGODB_URI)}`,
       "Nothing is currently accepting connections at that address.",
       "Start a local MongoDB server, start Docker Desktop and run a Mongo container, or replace MONGODB_URI with a hosted MongoDB URI.",
     ].join("\n");
@@ -26,11 +26,10 @@ function getStartupMessage(error) {
 
 async function startServer() {
   await connectToDatabase();
-  await ensureDefaultContentSeeded();
 
   return new Promise((resolve) => {
     server.listen(env.PORT, () => {
-      console.log(`Server listening on port ${env.PORT}`);
+      logInfo("server:listening", { port: env.PORT, logLevel: env.LOG_LEVEL, nodeEnv: env.NODE_ENV });
       resolve();
     });
   });
@@ -43,7 +42,7 @@ async function shutdown(signal) {
 
   isShuttingDown = true;
 
-  console.log(`${signal} received. Shutting down gracefully...`);
+  logInfo("server:shutdown", { signal });
 
   server.close(async () => {
     try {
@@ -63,6 +62,6 @@ process.on("SIGTERM", () => {
 });
 
 startServer().catch((error) => {
-  console.error(getStartupMessage(error));
+  logError("server:start-failed", { message: getStartupMessage(error) });
   process.exit(1);
 });

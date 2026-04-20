@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -210,7 +211,7 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
     () => sourceMembers.map((member) => toStoredMemberRecord(member)),
     [sourceMembers],
   );
-  const [members, setMembers] = useState(normalizedSourceMembers);
+  const [members, setMembers] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -225,7 +226,8 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
           return;
         }
 
-        setMembers(records.map((member) => toStoredMemberRecord(member)));
+        const fromApi = records.map((member) => toStoredMemberRecord(member));
+        setMembers(mergeRecordsBySlug(normalizedSourceMembers, fromApi));
       } catch {
         if (!isCancelled) {
           setMembers(normalizedSourceMembers);
@@ -277,7 +279,7 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
           entityId: normalizedMember.id,
           entityLabel: normalizedMember.name,
           entityType: 'member',
-          summary: `${normalizedMember.name} was added to the protected member directory.`,
+          summary: `${normalizedMember.name} was added to the member directory.`,
         });
 
         return {
@@ -314,7 +316,7 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
           entityId: normalizedMember.id,
           entityLabel: normalizedMember.name,
           entityType: 'member',
-          summary: `${normalizedMember.name} was updated in the protected member directory.`,
+          summary: `${normalizedMember.name} was updated in the member directory.`,
         });
 
         return {
@@ -346,7 +348,7 @@ export function useAdminMemberDrafts(sourceMembers, teams) {
             entityId: previousMember.id,
             entityLabel: previousMember.name,
             entityType: 'member',
-            summary: `${previousMember.name} was removed from the protected member directory.`,
+            summary: `${previousMember.name} was removed from the member directory.`,
           });
         }
 

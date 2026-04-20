@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -271,7 +272,7 @@ export function useAdminPublicationDrafts(sourcePublications, teams) {
       sourcePublications.map((publication) => toStoredPublicationRecord(publication, teams)),
     [sourcePublications, teams],
   );
-  const [publications, setPublications] = useState(normalizedSourcePublications);
+  const [publications, setPublications] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -286,7 +287,8 @@ export function useAdminPublicationDrafts(sourcePublications, teams) {
           return;
         }
 
-        setPublications(records.map((publication) => toStoredPublicationRecord(publication, teams)));
+        const fromApi = records.map((publication) => toStoredPublicationRecord(publication, teams));
+        setPublications(mergeRecordsBySlug(normalizedSourcePublications, fromApi));
       } catch {
         if (!isCancelled) {
           setPublications(normalizedSourcePublications);

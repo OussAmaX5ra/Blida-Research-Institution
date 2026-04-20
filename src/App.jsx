@@ -35,6 +35,8 @@ import { useAdminSession } from './providers/useAdminSession.js';
 import { usePublicData } from './providers/usePublicData.js';
 import { applyDocumentMetadata, buildRouteMetadata } from './site/documentMetadata';
 import AdminActivityPage from './pages/admin/AdminActivityPage.jsx';
+import AdminAbilitiesProvider from './providers/AdminAbilitiesProvider.jsx';
+import { canAccessAdminRoute } from './lib/admin-permission-utils.js';
 
 function replacePath(nextPath) {
   window.history.replaceState({}, '', nextPath);
@@ -83,6 +85,7 @@ export default function App() {
     }
 
     window.history.pushState({}, '', normalizedNextPath);
+    window.dispatchEvent(new PopStateEvent('popstate'));
     setPathname(normalizedNextPath);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -127,6 +130,28 @@ export default function App() {
       replacePath('/admin');
     }
   }, [currentRoute?.id, isAuthenticated, isAdminSessionLoading]);
+
+  useEffect(() => {
+    if (
+      !isProtectedAdminRoute
+      || isAdminSessionLoading
+      || !isAuthenticated
+      || !user
+      || !currentRoute?.id
+    ) {
+      return;
+    }
+
+    if (!canAccessAdminRoute(currentRoute.id, user)) {
+      replacePath('/admin');
+    }
+  }, [
+    currentRoute?.id,
+    isAuthenticated,
+    isAdminSessionLoading,
+    isProtectedAdminRoute,
+    user,
+  ]);
 
   useEffect(() => {
     const metadata = buildRouteMetadata({
@@ -296,28 +321,32 @@ export default function App() {
               </p>
             </section>
             )
-          : adminDashboardPage ??
-            adminTeamsPage ??
-            adminMembersPage ??
-            adminProjectsPage ??
-            adminPublicationsPage ??
-            adminNewsPage ??
-            adminGalleryPage ??
-            adminUsersPage ??
-            adminActivityPage ??
-            adminTeamCreatePage ??
-            adminTeamEditPage ??
-            adminMemberCreatePage ??
-            adminMemberEditPage ??
-            adminProjectCreatePage ??
-            adminProjectEditPage ??
-            adminPublicationCreatePage ??
-            adminPublicationEditPage ??
-            adminNewsCreatePage ??
-            adminNewsEditPage ??
-            adminGalleryCreatePage ??
-            adminGalleryEditPage ??
-            adminSectionPage}
+          : (
+            <AdminAbilitiesProvider user={user}>
+              {adminDashboardPage ??
+                adminTeamsPage ??
+                adminMembersPage ??
+                adminProjectsPage ??
+                adminPublicationsPage ??
+                adminNewsPage ??
+                adminGalleryPage ??
+                adminUsersPage ??
+                adminActivityPage ??
+                adminTeamCreatePage ??
+                adminTeamEditPage ??
+                adminMemberCreatePage ??
+                adminMemberEditPage ??
+                adminProjectCreatePage ??
+                adminProjectEditPage ??
+                adminPublicationCreatePage ??
+                adminPublicationEditPage ??
+                adminNewsCreatePage ??
+                adminNewsEditPage ??
+                adminGalleryCreatePage ??
+                adminGalleryEditPage ??
+                adminSectionPage}
+            </AdminAbilitiesProvider>
+            )}
       </AdminShell>
     );
   }

@@ -19,6 +19,7 @@ import {
 } from '../../lib/admin-gallery-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOptions = ['Draft', 'Review', 'Published'];
@@ -125,8 +126,8 @@ function GalleryFormSidebar({ mode, selectedTeam, values }) {
           Workflow note
         </div>
         <p className="admin-body-copy">
-          Gallery records currently save into the protected browser-side admin draft store. That keeps
-          the CRUD loop working while backend media endpoints are still pending.
+          Saves persist to MongoDB via the admin API; the public gallery updates after the cache
+          refreshes.
         </p>
       </article>
     </div>
@@ -139,10 +140,15 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
     error,
     hasLoaded,
     isLoading,
+    siteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(
+    sourceTeams,
+    siteContext.researchAxes ?? [],
+  );
   const { createGallery, deleteGallery, findGalleryBySlug, gallery, isReady, updateGallery } =
     useAdminGalleryDrafts(sourceGallery, teams);
+  const { canDelete, canPublish } = useAdminAbilities();
   const existingItem = mode === 'edit' ? findGalleryBySlug(gallerySlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingItem));
   const [errors, setErrors] = useState({});
@@ -185,6 +191,21 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
     [teams, values.teamSlug],
   );
 
+  const canPublishGallery = canPublish('gallery');
+  const galleryStatusLocked = mode === 'edit' && existingItem?.status === 'Published' && !canPublishGallery;
+
+  const galleryStatusChoices = useMemo(() => {
+    if (canPublishGallery) {
+      return statusOptions;
+    }
+
+    if (galleryStatusLocked) {
+      return ['Published'];
+    }
+
+    return statusOptions.filter((status) => status !== 'Published');
+  }, [canPublishGallery, galleryStatusLocked]);
+
   if ((!hasLoaded && isLoading) || !isReady || !areTeamsReady) {
     return (
       <section className="admin-teams-grid">
@@ -192,7 +213,7 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
           <p className="admin-section-kicker">Gallery Form</p>
           <h3>Loading the protected media form.</h3>
           <p className="admin-body-copy">
-            The gallery and team draft stores are initializing before the form can render.
+            Loading gallery and team data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -216,10 +237,10 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Media</p>
-          <h3>This gallery draft could not be found.</h3>
+          <h3>This media item could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin gallery registry. Return to the gallery list
-            and choose another record.
+            The slug no longer exists in the database. Return to the gallery list and choose another
+            record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/gallery')}>
             <ArrowLeft size={15} />
@@ -266,7 +287,7 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
 
     if (Object.keys(serverValidation.errors ?? {}).length) {
       setErrors(serverValidation.errors);
-      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this media draft.');
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this media item.');
       setLocalToast({
         type: 'error',
         title: mode === 'create' ? 'Media not created' : 'Media not saved',
@@ -275,9 +296,9 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
       return;
     }
 
-    const result = mode === 'create'
+    const result = await (mode === 'create'
       ? createGallery(values)
-      : updateGallery(existingItem.id, values);
+      : updateGallery(existingItem.id, values));
 
     if (Object.keys(result.errors ?? {}).length) {
       setErrors(result.errors);
@@ -323,10 +344,10 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Media' : 'Edit Media'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected gallery draft.' : `Refine ${existingItem.title}.`}</h3>
+              <h3>{mode === 'create' ? 'Add a gallery item.' : `Edit ${existingItem.title}`}</h3>
               <p className="admin-body-copy">
-                Capture the title, category, archive date, image source, caption, and optional team context here.
-                The protected gallery desk updates immediately once this draft is saved.
+                Capture the title, category, archive date, image source, caption, and optional team context.
+                Saves persist to MongoDB; the public gallery updates after the cache refreshes.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/gallery')}>
@@ -363,13 +384,19 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
               </GalleryFormField>
 
               <GalleryFormField label="Status" error={errors.status}>
-                <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                {galleryStatusLocked ? (
+                  <p className="admin-body-copy">
+                    <strong>Published</strong> — only accounts with publish permission can change this state.
+                  </p>
+                ) : (
+                  <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
+                    {galleryStatusChoices.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </GalleryFormField>
 
               <GalleryFormField label="Archive date" error={errors.dateIso}>
@@ -419,12 +446,12 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save media draft' : 'Save media changes'}
+                {mode === 'create' ? 'Create media item' : 'Save changes'}
               </button>
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('gallery') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
@@ -432,7 +459,7 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
               </div>
               <p className="admin-body-copy">
                 Deleting this media item removes the record from the protected admin gallery registry.
-                Type the media slug to confirm before the draft is removed.
+                Type the media slug to confirm deletion.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -450,7 +477,7 @@ export default function AdminGalleryFormPage({ mode, onNavigate, gallerySlug = '
         confirmValue={deleteConfirmation}
         description={
           existingItem
-            ? `This removes ${existingItem.title} from the protected gallery draft store. Type "${existingItem.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingItem.title} from the database. Type "${existingItem.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the media slug to confirm"

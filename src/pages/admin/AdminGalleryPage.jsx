@@ -16,8 +16,8 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import { useAdminGalleryDrafts } from '../../lib/admin-gallery-drafts.js';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOrder = ['Published', 'Review', 'Draft'];
@@ -220,14 +220,16 @@ function GalleryToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/gallery/new')}
-            >
-              <Plus size={15} />
-              Add media item
-            </button>
+            {canCreateGallery ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/gallery/new')}
+              >
+                <Plus size={15} />
+                Add media item
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -235,7 +237,7 @@ function GalleryToolbar({
   );
 }
 
-function GalleryCard({ item, onDeleteRequest, onNavigate }) {
+function GalleryCard({ canDeleteGallery, item, onDeleteRequest, onNavigate }) {
   return (
     <article className="admin-team-row">
       <div className="admin-team-row-header">
@@ -244,7 +246,6 @@ function GalleryCard({ item, onDeleteRequest, onNavigate }) {
             <span className="admin-team-acronym">{item.team?.acronym ?? 'MEDIA'}</span>
             <GalleryStatusBadge status={item.status} />
             <span className="admin-team-axis-pill">{item.category}</span>
-            {item.isLocalOnly ? <span className="admin-local-pill">Draft only</span> : null}
           </div>
           <h4>{item.title}</h4>
           <p>{item.caption}</p>
@@ -259,26 +260,24 @@ function GalleryCard({ item, onDeleteRequest, onNavigate }) {
             <PencilLine size={14} />
             Edit media
           </button>
-          <button
-            type="button"
-            className="admin-inline-link admin-inline-link-danger"
-            onClick={() => onDeleteRequest(item)}
-          >
-            <Trash2 size={14} />
-            Delete media
-          </button>
-          {!item.isLocalOnly ? (
-            <a
-              href="/gallery"
-              className="admin-inline-link"
-              onClick={(event) => onNavigate(event, '/gallery')}
+          {canDeleteGallery ? (
+            <button
+              type="button"
+              className="admin-inline-link admin-inline-link-danger"
+              onClick={() => onDeleteRequest(item)}
             >
-              Open public archive
-              <ArrowRight size={14} />
-            </a>
-          ) : (
-            <span className="admin-row-note">This media item is still protected and not on the public archive yet.</span>
-          )}
+              <Trash2 size={14} />
+              Delete media
+            </button>
+          ) : null}
+          <a
+            href="/gallery"
+            className="admin-inline-link"
+            onClick={(event) => onNavigate(event, '/gallery')}
+          >
+            Open public archive
+            <ArrowRight size={14} />
+          </a>
         </div>
       </div>
 
@@ -331,10 +330,11 @@ export default function AdminGalleryPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteGallery, gallery, isReady } = useAdminGalleryDrafts(sourceGallery, teams);
+  const { canCreate, canDelete } = useAdminAbilities();
   const [pendingDeleteItem, setPendingDeleteItem] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -431,6 +431,7 @@ export default function AdminGalleryPage({ onNavigate }) {
     <>
       <section className="admin-teams-grid">
         <GalleryToolbar
+          canCreateGallery={canCreate('gallery')}
           categoryOptions={categoryOptions}
           isRefreshing={isRefreshing}
           onNavigate={onNavigate}
@@ -485,6 +486,7 @@ export default function AdminGalleryPage({ onNavigate }) {
               {filteredGallery.map((item) => (
                 <GalleryCard
                   key={item.id}
+                  canDeleteGallery={canDelete('gallery')}
                   item={item}
                   onDeleteRequest={(entry) => {
                     setPendingDeleteItem(entry);
@@ -528,8 +530,7 @@ export default function AdminGalleryPage({ onNavigate }) {
           </div>
 
           <p className="admin-body-copy">
-            Newly created media records currently live in the protected admin draft store. Seeded records
-            still appear on the public gallery, while local drafts stay inside the admin shell until backend CRUD is wired.
+            Gallery items are stored in MongoDB and appear on the public gallery after the cache refreshes.
           </p>
         </article>
       </section>
@@ -539,7 +540,7 @@ export default function AdminGalleryPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeleteItem
-            ? `This removes ${pendingDeleteItem.title} from the protected gallery draft store. Type "${pendingDeleteItem.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeleteItem.title} from the database. Type "${pendingDeleteItem.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the media slug to confirm"

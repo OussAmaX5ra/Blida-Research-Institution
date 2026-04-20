@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { usePublicData } from '../providers/usePublicData';
-import { fallbackLabInfo } from '../lib/site-context';
 
 export default function Ticker() {
   const { siteContext } = usePublicData();
-  const labInfo = siteContext?.labInfo ?? fallbackLabInfo;
+  const labInfo = siteContext?.labInfo ?? { axes: [] };
 
   const items = useMemo(() => {
     const axes = labInfo.axes ?? [];

@@ -6,8 +6,12 @@ import { env } from "./config/env.js";
 import { getDatabaseState } from "./db/mongoose.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
+import { requestLogMiddleware } from "./middleware/request-log.js";
 import {
+  adminSessionReadRateLimiter,
   apiRateLimiter,
+  authLoginRouteRateLimiter,
+  authRefreshRateLimiter,
   authRouteRateLimiter,
   loginEmailRateLimiter,
   publicApiRateLimiter,
@@ -22,6 +26,7 @@ export function createApp() {
   const app = express();
 
   app.disable("x-powered-by");
+  app.use(requestLogMiddleware);
 
   app.use(securityHeadersMiddleware);
   app.use(
@@ -45,6 +50,9 @@ export function createApp() {
 
   app.use("/api", publicApiRateLimiter, publicRouter);
   app.use("/api", apiRateLimiter);
+  app.use("/api/admin/auth/me", adminSessionReadRateLimiter);
+  app.use("/api/admin/auth/refresh", authRefreshRateLimiter);
+  app.use("/api/admin/auth/login", authLoginRouteRateLimiter);
   app.use("/api/admin/auth", authRouteRateLimiter);
   app.use("/api/admin/auth/login", loginEmailRateLimiter);
   app.use("/api/admin/auth", authRouter);

@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -193,7 +194,7 @@ export function useAdminProjectDrafts(sourceProjects, teams, members) {
     () => sourceProjects.map((project) => toStoredProjectRecord(project)),
     [sourceProjects],
   );
-  const [projects, setProjects] = useState(normalizedSourceProjects);
+  const [projects, setProjects] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -208,7 +209,8 @@ export function useAdminProjectDrafts(sourceProjects, teams, members) {
           return;
         }
 
-        setProjects(records.map((project) => toStoredProjectRecord(project)));
+        const fromApi = records.map((project) => toStoredProjectRecord(project));
+        setProjects(mergeRecordsBySlug(normalizedSourceProjects, fromApi));
       } catch {
         if (!isCancelled) {
           setProjects(normalizedSourceProjects);

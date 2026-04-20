@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -232,7 +233,7 @@ export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
     () => sourceTeams.map((team) => toStoredTeamRecord(team, researchAxes)),
     [researchAxes, sourceTeams],
   );
-  const [teams, setTeams] = useState(normalizedSourceTeams);
+  const [teams, setTeams] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -247,7 +248,8 @@ export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
           return;
         }
 
-        setTeams(records.map((team) => toStoredTeamRecord(team, researchAxes)));
+        const fromApi = records.map((team) => toStoredTeamRecord(team, researchAxes));
+        setTeams(mergeRecordsBySlug(normalizedSourceTeams, fromApi));
       } catch {
         if (isCancelled) {
           return;
@@ -293,7 +295,7 @@ export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
           entityId: normalizedTeam.id,
           entityLabel: normalizedTeam.name,
           entityType: 'team',
-          summary: `${normalizedTeam.name} was added to the protected team registry.`,
+          summary: `${normalizedTeam.name} was added to the team directory.`,
         });
 
         return {
@@ -330,7 +332,7 @@ export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
           entityId: normalizedTeam.id,
           entityLabel: normalizedTeam.name,
           entityType: 'team',
-          summary: `${normalizedTeam.name} was updated inside the protected team registry.`,
+          summary: `${normalizedTeam.name} was updated in the team directory.`,
         });
 
         return {
@@ -362,7 +364,7 @@ export function useAdminTeamDrafts(sourceTeams, researchAxes = []) {
             entityId: previousTeam.id,
             entityLabel: previousTeam.name,
             entityType: 'team',
-            summary: `${previousTeam.name} was removed from the protected team registry.`,
+            summary: `${previousTeam.name} was removed from the team directory.`,
           });
         }
 

@@ -11,7 +11,13 @@
     "check-env": "node src/config/check-env.js",
     "create-admin": "node src/scripts/create-admin-user.js",
     "dev": "node --watch src/server.js",
+    "seed-content": "node src/scripts/seed-content.js",
+    "seed-content:minimal": "node src/scripts/seed-content.js --file=./seed-data/content.minimal.json --replace",
+    "seed-content:full": "node src/scripts/seed-content.js --file=./seed-data/content.full-ui-demo.json --replace",
+    "build:full-ui-demo-seed": "node src/scripts/build-full-ui-demo-seed.mjs",
+    "export-content": "node src/scripts/export-content.js",
     "start": "node src/server.js",
+    "verify:content": "node src/scripts/verify-content-integrity.js",
     "verify:milestone1": "node src/scripts/verify-milestone-1.js"
   },
   "dependencies": {

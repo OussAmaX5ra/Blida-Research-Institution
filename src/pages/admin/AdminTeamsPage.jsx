@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const sortLabels = {
@@ -43,12 +43,12 @@ const statusMeta = {
   },
 };
 
-function deriveTeamStatus(team) {
-  if ((team.publicationCount ?? 0) < 2) {
+function deriveTeamStatus({ publicationCount, memberCount }) {
+  if ((publicationCount ?? 0) < 2) {
     return 'output-watch';
   }
 
-  if ((team.memberCount ?? 0) < 5) {
+  if ((memberCount ?? 0) < 5) {
     return 'roster-watch';
   }
 
@@ -114,16 +114,16 @@ function TeamsToolbar({
   statusCounts,
   statusValue,
   isRefreshing,
+  canCreateTeam,
 }) {
   return (
     <>
       <article className="admin-editorial-card admin-editorial-card-wide">
         <p className="admin-section-kicker">Teams Registry</p>
-        <h3>The team desk now supports create, edit, and delete workflows on top of the live roster view.</h3>
+        <h3>Create, edit, and delete teams backed by MongoDB.</h3>
         <p className="admin-body-copy">
-          These actions are implemented as protected admin drafts for now, which means the workflow
-          is real in the UI even before database-backed CRUD arrives. The next backend phase can
-          connect this exact interface to persisted team endpoints.
+          List data merges the public catalog with the admin API so you always see persisted teams.
+          Saves and deletes go through the protected content API.
         </p>
 
         <div className="admin-summary-strip">
@@ -201,14 +201,16 @@ function TeamsToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/teams/new')}
-            >
-              <Plus size={15} />
-              Add team
-            </button>
+            {canCreateTeam ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/teams/new')}
+              >
+                <Plus size={15} />
+                Add team
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -216,7 +218,7 @@ function TeamsToolbar({
   );
 }
 
-function TeamRow({ row, onDeleteRequest, onNavigate }) {
+function TeamRow({ row, canDeleteTeam, onDeleteRequest, onNavigate }) {
   return (
     <article className="admin-team-row">
       <div className="admin-team-row-header">
@@ -225,7 +227,6 @@ function TeamRow({ row, onDeleteRequest, onNavigate }) {
             <span className="admin-team-acronym">{row.acronym}</span>
             <TeamStatusBadge statusId={row.statusId} />
             <span className="admin-team-axis-pill">{row.axisName}</span>
-            {row.isLocalOnly ? <span className="admin-local-pill">Draft only</span> : null}
           </div>
           <h4>{row.name}</h4>
           <p>{row.focus}</p>
@@ -240,26 +241,24 @@ function TeamRow({ row, onDeleteRequest, onNavigate }) {
             <PencilLine size={14} />
             Edit team
           </button>
-          <button
-            type="button"
-            className="admin-inline-link admin-inline-link-danger"
-            onClick={() => onDeleteRequest(row)}
-          >
-            <Trash2 size={14} />
-            Delete team
-          </button>
-          {row.isLocalOnly ? (
-            <span className="admin-row-note">Local admin draft until backend CRUD is wired.</span>
-          ) : (
-            <a
-              href={`/teams/${row.slug}`}
-              className="admin-inline-link"
-              onClick={(event) => onNavigate(event, `/teams/${row.slug}`)}
+          {canDeleteTeam ? (
+            <button
+              type="button"
+              className="admin-inline-link admin-inline-link-danger"
+              onClick={() => onDeleteRequest(row)}
             >
-              Open public profile
-              <ArrowRight size={14} />
-            </a>
-          )}
+              <Trash2 size={14} />
+              Delete team
+            </button>
+          ) : null}
+          <a
+            href={`/teams/${row.slug}`}
+            className="admin-inline-link"
+            onClick={(event) => onNavigate(event, `/teams/${row.slug}`)}
+          >
+            Open public profile
+            <ArrowRight size={14} />
+          </a>
         </div>
       </div>
 
@@ -307,15 +306,21 @@ function TeamRow({ row, onDeleteRequest, onNavigate }) {
 
 export default function AdminTeamsPage({ onNavigate }) {
   const {
-    collections: { teams: sourceTeams },
+    collections: {
+      members: sourceMembers,
+      projects: sourceProjects,
+      publications: sourcePublications,
+      teams: sourceTeams,
+    },
     error,
     hasLoaded,
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { deleteTeam, isReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
+  const { canCreate, canDelete } = useAdminAbilities();
   const [pendingDeleteTeam, setPendingDeleteTeam] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -327,7 +332,15 @@ export default function AdminTeamsPage({ onNavigate }) {
   const teamRows = useMemo(
     () =>
       teams.map((team) => {
-        const statusId = deriveTeamStatus(team);
+        const derivedMemberCount = sourceMembers.filter((member) => member.team?.slug === team.slug).length;
+        const derivedProjectCount = sourceProjects.filter((project) => project.team?.slug === team.slug).length;
+        const derivedPublicationCount = sourcePublications.filter(
+          (publication) => publication.team?.acronym === team.acronym,
+        ).length;
+        const memberCount = team.memberCount || derivedMemberCount;
+        const projectCount = team.projectCount || derivedProjectCount;
+        const publicationCount = team.publicationCount || derivedPublicationCount;
+        const statusId = deriveTeamStatus({ memberCount, publicationCount });
         const professorCount = team.memberCounts?.Professor ?? 0;
         const doctorCount = team.memberCounts?.Doctor ?? 0;
         const phdCount = team.memberCounts?.['PhD Student'] ?? 0;
@@ -338,12 +351,11 @@ export default function AdminTeamsPage({ onNavigate }) {
           axisName: team.axis?.name ?? 'Unassigned axis',
           focus: team.focus,
           id: team.id,
-          isLocalOnly: Boolean(team.isLocalOnly),
           leader: team.leader,
-          memberCount: team.memberCount ?? 0,
+          memberCount,
           name: team.name,
-          projectCount: team.projectCount ?? 0,
-          publicationCount: team.publicationCount ?? 0,
+          projectCount,
+          publicationCount,
           roleMix: `${professorCount}P / ${doctorCount}D / ${phdCount}PhD`,
           slug: team.slug,
           statusDescription: statusMeta[statusId].description,
@@ -352,7 +364,7 @@ export default function AdminTeamsPage({ onNavigate }) {
           themes: team.themes ?? [],
         };
       }),
-    [teams],
+    [sourceMembers, sourceProjects, sourcePublications, teams],
   );
 
   const axisOptions = useMemo(
@@ -439,6 +451,7 @@ export default function AdminTeamsPage({ onNavigate }) {
         <TeamsToolbar
           axisOptions={axisOptions}
           axisValue={axisValue}
+          canCreateTeam={canCreate('team')}
           onAxisChange={setAxisValue}
           onNavigate={onNavigate}
           onRefresh={retry}
@@ -461,7 +474,7 @@ export default function AdminTeamsPage({ onNavigate }) {
           <div className="admin-note-list">
             <div className="admin-note-item">
               <h4>{teamRows.length} teams are currently indexed.</h4>
-              <p>The protected list is now working from a dedicated admin draft store rather than a read-only placeholder.</p>
+              <p>The list reads from the database via the admin and public APIs.</p>
             </div>
             <div className="admin-note-item">
               <h4>{totalResearchers} researchers are visible across the roster.</h4>
@@ -485,6 +498,7 @@ export default function AdminTeamsPage({ onNavigate }) {
               {filteredRows.map((row) => (
                 <TeamRow
                   key={row.id}
+                  canDeleteTeam={canDelete('team')}
                   row={row}
                   onDeleteRequest={(team) => {
                     setPendingDeleteTeam(team);
@@ -512,7 +526,7 @@ export default function AdminTeamsPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeleteTeam
-            ? `This removes ${pendingDeleteTeam.name} from the admin draft registry. Type "${pendingDeleteTeam.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeleteTeam.name} from the database. Type "${pendingDeleteTeam.slug}" to confirm.`
             : ''
         }
         isOpen={Boolean(pendingDeleteTeam)}

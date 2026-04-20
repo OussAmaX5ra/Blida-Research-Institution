@@ -7,6 +7,7 @@ import {
   mapAdminApiError,
   updateAdminContentItem,
 } from './admin-content-api.js';
+import { mergeRecordsBySlug } from './mergeRecordsBySlug.js';
 import { recordAdminActivity } from './admin-activity-log.js';
 
 const RESERVED_SLUGS = new Set(['admin', 'api', 'login', 'search', 'new', 'edit']);
@@ -169,7 +170,7 @@ export function validateNewsDraft(values, news, teams, currentId) {
   if (!teamSlugs.length) {
     nextErrors.teamSlugs = 'Link the story to at least one team.';
   } else if (teamSlugs.some((teamSlug) => !teams.some((team) => team.slug === teamSlug))) {
-    nextErrors.teamSlugs = 'Each linked team must exist in the protected team registry.';
+    nextErrors.teamSlugs = 'Each linked team must exist in the database.';
   }
 
   return {
@@ -243,7 +244,7 @@ export function useAdminNewsDrafts(sourceNews, teams) {
     () => sourceNews.map((item) => toStoredNewsRecord(item, teams)),
     [sourceNews, teams],
   );
-  const [news, setNews] = useState(normalizedSourceNews);
+  const [news, setNews] = useState([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -258,7 +259,8 @@ export function useAdminNewsDrafts(sourceNews, teams) {
           return;
         }
 
-        setNews(records.map((item) => toStoredNewsRecord(item, teams)));
+        const fromApi = records.map((item) => toStoredNewsRecord(item, teams));
+        setNews(mergeRecordsBySlug(normalizedSourceNews, fromApi));
       } catch {
         if (!isCancelled) {
           setNews(normalizedSourceNews);

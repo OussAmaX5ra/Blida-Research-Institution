@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { logError, logWarn } from "../lib/logger.js";
 import { AppError } from "../utils/app-error.js";
 
 function getStatusCode(error) {
@@ -48,11 +49,21 @@ export function errorHandler(error, request, response, next) {
   const message = getMessage(error, statusCode);
 
   if (statusCode >= 500) {
-    console.error("Unhandled request error", {
+    logError("request:unhandled-error", {
+      id: request.id,
       method: request.method,
       path: request.originalUrl,
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
+    });
+  } else if (statusCode >= 400) {
+    logWarn("request:client-error", {
+      id: request.id,
+      method: request.method,
+      path: request.originalUrl,
+      status: statusCode,
+      code,
+      message,
     });
   }
 

@@ -19,8 +19,8 @@ import {
   buildPublicationApaCitation,
   useAdminPublicationDrafts,
 } from '../../lib/admin-publication-drafts.js';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOrder = ['Published', 'Review', 'Draft'];
@@ -132,6 +132,7 @@ function PublicationToolbar({
   teamOptions,
   themeOptions,
   yearOptions,
+  canCreatePublication,
 }) {
   return (
     <>
@@ -264,14 +265,16 @@ function PublicationToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/publications/new')}
-            >
-              <Plus size={15} />
-              Add publication
-            </button>
+            {canCreatePublication ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/publications/new')}
+              >
+                <Plus size={15} />
+                Add publication
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -279,7 +282,7 @@ function PublicationToolbar({
   );
 }
 
-function PublicationCard({ onDeleteRequest, onNavigate, publication }) {
+function PublicationCard({ canDeletePublication, onDeleteRequest, onNavigate, publication }) {
   const citationPreview = buildPublicationApaCitation(publication);
 
   return (
@@ -290,7 +293,6 @@ function PublicationCard({ onDeleteRequest, onNavigate, publication }) {
             <span className="admin-team-acronym">{publication.team?.acronym ?? 'TEAM'}</span>
             <PublicationStatusBadge status={publication.status} />
             <span className="admin-team-axis-pill">{publication.year}</span>
-            {publication.isLocalOnly ? <span className="admin-local-pill">Draft only</span> : null}
           </div>
           <h4>{publication.title}</h4>
           <p>{citationPreview}</p>
@@ -305,26 +307,24 @@ function PublicationCard({ onDeleteRequest, onNavigate, publication }) {
             <PencilLine size={14} />
             Edit publication
           </button>
-          <button
-            type="button"
-            className="admin-inline-link admin-inline-link-danger"
-            onClick={() => onDeleteRequest(publication)}
-          >
-            <Trash2 size={14} />
-            Delete publication
-          </button>
-          {!publication.isLocalOnly ? (
-            <a
-              href={`/publications/${publication.slug}`}
-              className="admin-inline-link"
-              onClick={(event) => onNavigate(event, `/publications/${publication.slug}`)}
+          {canDeletePublication ? (
+            <button
+              type="button"
+              className="admin-inline-link admin-inline-link-danger"
+              onClick={() => onDeleteRequest(publication)}
             >
-              Open public record
-              <ArrowRight size={14} />
-            </a>
-          ) : (
-            <span className="admin-row-note">This publication is still protected and not on the public site yet.</span>
-          )}
+              <Trash2 size={14} />
+              Delete publication
+            </button>
+          ) : null}
+          <a
+            href={`/publications/${publication.slug}`}
+            className="admin-inline-link"
+            onClick={(event) => onNavigate(event, `/publications/${publication.slug}`)}
+          >
+            Open public record
+            <ArrowRight size={14} />
+          </a>
         </div>
       </div>
 
@@ -378,13 +378,14 @@ export default function AdminPublicationsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deletePublication, isReady, publications } = useAdminPublicationDrafts(
     sourcePublications,
     teams,
   );
+  const { canCreate, canDelete } = useAdminAbilities();
   const [pendingDeletePublication, setPendingDeletePublication] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -520,6 +521,7 @@ export default function AdminPublicationsPage({ onNavigate }) {
       <section className="admin-teams-grid">
         <PublicationToolbar
           authorOptions={authorOptions}
+          canCreatePublication={canCreate('publication')}
           isRefreshing={isRefreshing}
           onNavigate={onNavigate}
           onRefresh={retry}
@@ -579,6 +581,7 @@ export default function AdminPublicationsPage({ onNavigate }) {
               {filteredPublications.map((publication) => (
                 <PublicationCard
                   key={publication.id}
+                  canDeletePublication={canDelete('publication')}
                   onDeleteRequest={(entry) => {
                     setPendingDeletePublication(entry);
                     setDeleteConfirmation('');
@@ -622,8 +625,7 @@ export default function AdminPublicationsPage({ onNavigate }) {
           </div>
 
           <p className="admin-body-copy">
-            Newly created publication records currently live in the protected admin draft store.
-            Seeded records still link to the public library, while local drafts stay safely inside the admin shell until backend CRUD is wired.
+            Publications are stored in MongoDB and listed on the public site after the cache refreshes.
           </p>
         </article>
       </section>
@@ -633,7 +635,7 @@ export default function AdminPublicationsPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeletePublication
-            ? `This removes ${pendingDeletePublication.title} from the protected publication draft store. Type "${pendingDeletePublication.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeletePublication.title} from the database. Type "${pendingDeletePublication.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the publication slug to confirm"

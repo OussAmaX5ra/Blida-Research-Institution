@@ -12,9 +12,10 @@ import {
 } from 'lucide-react';
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminMemberDrafts } from '../../lib/admin-member-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { withMemberLinkCounts } from '../../lib/member-link-counts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const roleOrder = ['Professor', 'Doctor', 'PhD Student'];
@@ -53,10 +54,9 @@ function AdminMembersLoadingState() {
     <section className="admin-teams-grid">
       <article className="admin-editorial-card admin-editorial-card-wide">
         <p className="admin-section-kicker">Members Registry</p>
-        <h3>Loading the protected member roster.</h3>
+        <h3>Loading the member roster.</h3>
         <p className="admin-body-copy">
-          The member management surface is hydrating role, team, and research-theme context before
-          the protected workflow can render.
+          Fetching members and teams from the API before the management view can render.
         </p>
       </article>
     </section>
@@ -96,6 +96,7 @@ function MemberToolbar({
   themeOptions,
   memberCounts,
   isRefreshing,
+  canCreateMember,
 }) {
   return (
     <>
@@ -190,14 +191,16 @@ function MemberToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/members/new')}
-            >
-              <Plus size={15} />
-              Add member
-            </button>
+            {canCreateMember ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/members/new')}
+              >
+                <Plus size={15} />
+                Add member
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -205,7 +208,7 @@ function MemberToolbar({
   );
 }
 
-function MemberGroupCard({ group, onDeleteRequest, onNavigate }) {
+function MemberGroupCard({ group, canDeleteMember, onDeleteRequest, onNavigate }) {
   return (
     <article className="admin-editorial-card">
       <div className="admin-panel-heading">
@@ -245,14 +248,16 @@ function MemberGroupCard({ group, onDeleteRequest, onNavigate }) {
                 <PencilLine size={14} />
                 Edit
               </button>
-              <button
-                type="button"
-                className="admin-inline-link admin-inline-link-danger"
-                onClick={() => onDeleteRequest(member)}
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
+              {canDeleteMember ? (
+                <button
+                  type="button"
+                  className="admin-inline-link admin-inline-link-danger"
+                  onClick={() => onDeleteRequest(member)}
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              ) : null}
               {member.primaryTeam ? (
                 <a
                   href={`/teams/${member.primaryTeam.slug}`}
@@ -273,16 +278,21 @@ function MemberGroupCard({ group, onDeleteRequest, onNavigate }) {
 
 export default function AdminMembersPage({ onNavigate }) {
   const {
-    collections: { members: sourceMembers, teams: sourceTeams },
+    collections: { members: sourceMembers, projects, publications, teams: sourceTeams },
     error,
     hasLoaded,
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteMember, isReady, members } = useAdminMemberDrafts(sourceMembers, teams);
+  const { canCreate, canDelete } = useAdminAbilities();
+  const membersWithLinkCounts = useMemo(
+    () => withMemberLinkCounts(members, projects, publications),
+    [members, projects, publications],
+  );
   const [pendingDeleteMember, setPendingDeleteMember] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -298,8 +308,8 @@ export default function AdminMembersPage({ onNavigate }) {
   );
 
   const themeOptions = useMemo(
-    () => [...new Set(members.flatMap((member) => member.themes ?? []))].toSorted(),
-    [members],
+    () => [...new Set(membersWithLinkCounts.flatMap((member) => member.themes ?? []))].toSorted(),
+    [membersWithLinkCounts],
   );
 
   const memberCounts = useMemo(
@@ -307,17 +317,17 @@ export default function AdminMembersPage({ onNavigate }) {
       roleOrder.reduce(
         (counts, role) => ({
           ...counts,
-          [role]: members.filter((member) => member.role === role).length,
+          [role]: membersWithLinkCounts.filter((member) => member.role === role).length,
         }),
         {},
       ),
-    [members],
+    [membersWithLinkCounts],
   );
 
   const filteredMembers = useMemo(() => {
     const normalizedSearch = deferredSearchValue.trim().toLowerCase();
 
-    const nextMembers = members.filter((member) => {
+    const nextMembers = membersWithLinkCounts.filter((member) => {
       const matchesSearch = normalizedSearch
         ? [member.name, member.title, member.expertise, member.themes.join(' ')]
             .join(' ')
@@ -346,7 +356,7 @@ export default function AdminMembersPage({ onNavigate }) {
 
       return left.name.localeCompare(right.name);
     });
-  }, [deferredSearchValue, members, selectedRole, selectedTeam, selectedTheme, sortValue]);
+  }, [deferredSearchValue, membersWithLinkCounts, selectedRole, selectedTeam, selectedTheme, sortValue]);
 
   const groupedMembers = useMemo(
     () =>
@@ -381,6 +391,7 @@ export default function AdminMembersPage({ onNavigate }) {
     <>
       <section className="admin-teams-grid">
         <MemberToolbar
+          canCreateMember={canCreate('member')}
           isRefreshing={isRefreshing}
           memberCounts={memberCounts}
           onNavigate={onNavigate}
@@ -407,7 +418,7 @@ export default function AdminMembersPage({ onNavigate }) {
 
           <div className="admin-note-list">
             <div className="admin-note-item">
-              <h4>{members.length} member records are currently indexed.</h4>
+              <h4>{membersWithLinkCounts.length} member records are currently indexed.</h4>
               <p>The protected list separates the roster by academic role without flattening the institution into one generic people table.</p>
             </div>
             <div className="admin-note-item">
@@ -432,6 +443,7 @@ export default function AdminMembersPage({ onNavigate }) {
               {groupedMembers.map((group) => (
                 <MemberGroupCard
                   key={group.role}
+                  canDeleteMember={canDelete('member')}
                   group={group}
                   onDeleteRequest={(member) => {
                     setPendingDeleteMember(member);
@@ -458,7 +470,7 @@ export default function AdminMembersPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeleteMember
-            ? `This removes ${pendingDeleteMember.name} from the protected member draft store. Type "${pendingDeleteMember.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeleteMember.name} from the database. Type "${pendingDeleteMember.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the member slug to confirm"

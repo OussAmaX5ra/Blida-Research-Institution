@@ -16,8 +16,8 @@ import {
 
 import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog.jsx';
 import { useAdminNewsDrafts } from '../../lib/admin-news-drafts.js';
-import { fallbackSiteContext } from '../../lib/site-context.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const statusOrder = ['Published', 'Review', 'Draft'];
@@ -114,6 +114,7 @@ function NewsToolbar({
   statusCounts,
   teamOptions,
   yearOptions,
+  canCreateNews,
 }) {
   return (
     <>
@@ -220,14 +221,16 @@ function NewsToolbar({
               <RefreshCw size={15} className={isRefreshing ? 'admin-spin' : undefined} />
               Refresh collections
             </button>
-            <button
-              type="button"
-              className="admin-secondary-button"
-              onClick={(event) => onNavigate(event, '/admin/news/new')}
-            >
-              <Plus size={15} />
-              Add story
-            </button>
+            {canCreateNews ? (
+              <button
+                type="button"
+                className="admin-secondary-button"
+                onClick={(event) => onNavigate(event, '/admin/news/new')}
+              >
+                <Plus size={15} />
+                Add story
+              </button>
+            ) : null}
           </div>
         </div>
       </article>
@@ -235,7 +238,7 @@ function NewsToolbar({
   );
 }
 
-function NewsCard({ item, onDeleteRequest, onNavigate }) {
+function NewsCard({ canDeleteNews, item, onDeleteRequest, onNavigate }) {
   return (
     <article className="admin-team-row">
       <div className="admin-team-row-header">
@@ -244,7 +247,6 @@ function NewsCard({ item, onDeleteRequest, onNavigate }) {
             <span className="admin-team-acronym">{item.teams[0]?.acronym ?? 'NEWS'}</span>
             <NewsStatusBadge status={item.status} />
             <span className="admin-team-axis-pill">{item.category}</span>
-            {item.isLocalOnly ? <span className="admin-local-pill">Draft only</span> : null}
           </div>
           <h4>{item.headline}</h4>
           <p>{item.excerpt}</p>
@@ -259,26 +261,24 @@ function NewsCard({ item, onDeleteRequest, onNavigate }) {
             <PencilLine size={14} />
             Edit story
           </button>
-          <button
-            type="button"
-            className="admin-inline-link admin-inline-link-danger"
-            onClick={() => onDeleteRequest(item)}
-          >
-            <Trash2 size={14} />
-            Delete story
-          </button>
-          {!item.isLocalOnly ? (
-            <a
-              href={`/news/${item.slug}`}
-              className="admin-inline-link"
-              onClick={(event) => onNavigate(event, `/news/${item.slug}`)}
+          {canDeleteNews ? (
+            <button
+              type="button"
+              className="admin-inline-link admin-inline-link-danger"
+              onClick={() => onDeleteRequest(item)}
             >
-              Open public story
-              <ArrowRight size={14} />
-            </a>
-          ) : (
-            <span className="admin-row-note">This story is still protected and not on the public site yet.</span>
-          )}
+              <Trash2 size={14} />
+              Delete story
+            </button>
+          ) : null}
+          <a
+            href={`/news/${item.slug}`}
+            className="admin-inline-link"
+            onClick={(event) => onNavigate(event, `/news/${item.slug}`)}
+          >
+            Open public story
+            <ArrowRight size={14} />
+          </a>
         </div>
       </div>
 
@@ -332,10 +332,11 @@ export default function AdminNewsPage({ onNavigate }) {
     isLoading,
     isRefreshing,
     retry,
-    siteContext = fallbackSiteContext,
+    siteContext,
   } = usePublicData();
   const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams, siteContext.researchAxes ?? []);
   const { deleteNews, isReady, news } = useAdminNewsDrafts(sourceNews, teams);
+  const { canCreate, canDelete } = useAdminAbilities();
   const [pendingDeleteNews, setPendingDeleteNews] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [searchValue, setSearchValue] = useState('');
@@ -432,6 +433,7 @@ export default function AdminNewsPage({ onNavigate }) {
     <>
       <section className="admin-teams-grid">
         <NewsToolbar
+          canCreateNews={canCreate('news')}
           categoryOptions={categoryOptions}
           isRefreshing={isRefreshing}
           onNavigate={onNavigate}
@@ -486,6 +488,7 @@ export default function AdminNewsPage({ onNavigate }) {
               {filteredNews.map((item) => (
                 <NewsCard
                   key={item.id}
+                  canDeleteNews={canDelete('news')}
                   item={item}
                   onDeleteRequest={(entry) => {
                     setPendingDeleteNews(entry);
@@ -529,8 +532,8 @@ export default function AdminNewsPage({ onNavigate }) {
           </div>
 
           <p className="admin-body-copy">
-            Newly created stories currently live in the protected admin draft store. Seeded records
-            still link to the public news feed, while local drafts stay inside the admin shell until backend CRUD is wired.
+            Stories are stored in MongoDB. The public news feed reflects the same records after the
+            cache refreshes.
           </p>
         </article>
       </section>
@@ -540,7 +543,7 @@ export default function AdminNewsPage({ onNavigate }) {
         confirmValue={deleteConfirmation}
         description={
           pendingDeleteNews
-            ? `This removes ${pendingDeleteNews.headline} from the protected news draft store. Type "${pendingDeleteNews.slug}" to confirm the delete workflow.`
+            ? `This removes ${pendingDeleteNews.headline} from the database. Type "${pendingDeleteNews.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the story slug to confirm"

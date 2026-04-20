@@ -11,7 +11,6 @@ research-lab/
   src/                # current React frontend
   public/             # current frontend static assets
   server/             # Express + Mongo backend
-  shared/             # runtime-safe shared data and future shared utilities
   docs/               # planning and status documents
   package.json        # current frontend package
 ```
@@ -20,8 +19,7 @@ research-lab/
 
 - The frontend is still rooted at the repository top level rather than under `client/`.
 - The backend is correctly isolated under `server/`.
-- A `shared/` folder now exists for code and data that can be consumed by both runtimes safely.
-- Public API responses are still derived from shared mock data rather than MongoDB domain collections.
+- Public API responses are backed by MongoDB domain collections.
 - The server no longer imports data directly from the frontend tree.
 
 ## Target Architecture
@@ -37,9 +35,6 @@ research-lab/
   server/
     src/
     package.json
-  shared/
-    src/
-    package.json
   docs/
   package.json
   .gitignore
@@ -49,19 +44,18 @@ research-lab/
 
 - `client/` keeps frontend tooling and routing concerns separate from backend runtime code.
 - `server/` owns API, auth, persistence, and security-critical logic.
-- `shared/` provides a safe home for constants, schema fragments, API contract helpers, and other cross-runtime modules.
+- A shared package is optional and should only contain runtime-safe utilities when reintroduced.
 
 ## Current Boundary Rules
 
 - `server/` must not import from `src/` or other frontend-only paths.
-- `src/` may import from `shared/`.
-- `server/` may import from `shared/`.
-- `shared/` must stay runtime-safe and dependency-light.
+- Public and admin clients should consume data through API adapters in `src/lib`.
+- Server data dependencies should remain inside `server/src`.
 
 ## Migration Status
 
 - `server/`: implemented and active
-- `shared/`: introduced and active
+- `shared/`: removed from runtime data flow
 - `client/`: planned but not yet extracted from the root frontend
 
 ## Decision Summary

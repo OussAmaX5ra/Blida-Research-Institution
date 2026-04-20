@@ -114,3 +114,20 @@ Scope: public pages + admin routes in `publicRouteMap`
 
 - `docs/mcp_screenshots/` is prepared for future captures.
 - No screenshots were stored in this pass.
+
+## Fix Status Update (Implemented)
+
+- [x] **Teams runtime crash fixed** in `src/pages/TeamsPage.jsx` by passing `researchAxes` into `TeamCard` instead of using an out-of-scope variable.
+- [x] **Public-page admin session noise reduced**:
+  - `src/providers/AdminSessionProvider.jsx` now resolves admin sessions only on `/admin*` paths.
+  - `src/lib/admin-auth-api.js` now supports optional refresh attempts so public routes avoid unnecessary auth refresh calls.
+  - `src/App.jsx` now emits a `popstate` event on in-app navigation so providers tracking location stay in sync.
+- [x] **Auth rate-limit behavior tuned**:
+  - Added `adminSessionReadRateLimiter` in `server/src/middleware/security.js`.
+  - Applied it specifically to `/api/admin/auth/me` in `server/src/app.js`.
+  - Excluded `/me` from the tighter `authRouteRateLimiter` bucket.
+
+## Remaining Behavior (Expected in unauthenticated admin probes)
+
+- Unauthenticated visits to admin routes still produce `401` responses by design.
+- Aggressive automated route sweeps can still trigger `429` responses due cumulative API pressure; this does not occur under normal user browsing patterns.

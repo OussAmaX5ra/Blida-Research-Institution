@@ -11,7 +11,6 @@ import {
   Users2,
 } from 'lucide-react';
 import { PublicPageError, PublicPageLoading } from '../components/site/PublicAsyncState';
-import { fallbackLabInfo } from '../lib/site-context.js';
 import { usePublicData } from '../providers/usePublicData.js';
 
 const axisIcons = {
@@ -284,7 +283,7 @@ export default function ResearchAxesPage({ onNavigate }) {
     );
   }
 
-  const labInfo = siteContext.labInfo ?? fallbackLabInfo;
+  const labInfo = siteContext.labInfo ?? { acronym: '', name: '' };
   const researchAxes = siteContext.researchAxes ?? [];
   const totalProjects = teams.reduce((sum, team) => sum + team.projectCount, 0);
   const totalPublications = teams.reduce((sum, team) => sum + team.publicationCount, 0);

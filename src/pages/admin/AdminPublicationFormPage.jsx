@@ -23,6 +23,7 @@ import {
 } from '../../lib/admin-publication-drafts.js';
 import { useAdminTeamDrafts } from '../../lib/admin-team-drafts.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
+import { useAdminAbilities } from '../../providers/useAdminAbilities.js';
 import { usePublicData } from '../../providers/usePublicData.js';
 
 const entryTypeOptions = [
@@ -187,8 +188,8 @@ function PublicationFormSidebar({ mode, selectedTeam, values }) {
           Workflow note
         </div>
         <p className="admin-body-copy">
-          Publication records currently save into the protected browser-side admin draft store. This
-          keeps the CRUD loop working while backend publication endpoints are still pending.
+          Saves persist to MongoDB via the admin API; the public bibliography updates after the cache
+          refreshes.
         </p>
       </article>
     </div>
@@ -201,10 +202,15 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
     error,
     hasLoaded,
     isLoading,
+    siteContext,
   } = usePublicData();
-  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(sourceTeams);
+  const { isReady: areTeamsReady, teams } = useAdminTeamDrafts(
+    sourceTeams,
+    siteContext.researchAxes ?? [],
+  );
   const { createPublication, deletePublication, findPublicationBySlug, isReady, publications, updatePublication } =
     useAdminPublicationDrafts(sourcePublications, teams);
+  const { canDelete, canPublish } = useAdminAbilities();
   const existingPublication = mode === 'edit' ? findPublicationBySlug(publicationSlug) : null;
   const [values, setValues] = useState(buildInitialValues(existingPublication));
   const [errors, setErrors] = useState({});
@@ -247,6 +253,22 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
     [teams, values.teamSlug],
   );
 
+  const canPublishPublication = canPublish('publication');
+  const publicationStatusLocked =
+    mode === 'edit' && existingPublication?.status === 'Published' && !canPublishPublication;
+
+  const publicationStatusChoices = useMemo(() => {
+    if (canPublishPublication) {
+      return statusOptions;
+    }
+
+    if (publicationStatusLocked) {
+      return ['Published'];
+    }
+
+    return statusOptions.filter((status) => status !== 'Published');
+  }, [canPublishPublication, publicationStatusLocked]);
+
   if ((!hasLoaded && isLoading) || !isReady || !areTeamsReady) {
     return (
       <section className="admin-teams-grid">
@@ -254,7 +276,7 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
           <p className="admin-section-kicker">Publication Form</p>
           <h3>Loading the protected publication form.</h3>
           <p className="admin-body-copy">
-            The publication and team draft stores are initializing before the form can render.
+            Loading publication and team data from the API before the form can render.
           </p>
         </article>
       </section>
@@ -278,10 +300,10 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
       <section className="admin-teams-grid">
         <article className="admin-editorial-card admin-editorial-card-wide admin-editorial-card-alert">
           <p className="admin-section-kicker">Edit Publication</p>
-          <h3>This publication draft could not be found.</h3>
+          <h3>This publication could not be found.</h3>
           <p className="admin-body-copy">
-            The slug no longer exists in the protected admin publication registry. Return to the
-            publications list and choose another record.
+            The slug no longer exists in the database. Return to the publications list and choose
+            another record.
           </p>
           <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/publications')}>
             <ArrowLeft size={15} />
@@ -328,7 +350,7 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
 
     if (Object.keys(serverValidation.errors ?? {}).length) {
       setErrors(serverValidation.errors);
-      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this publication draft.');
+      setGlobalMessage(serverValidation.message ?? 'Server-side validation rejected this publication.');
       setLocalToast({
         type: 'error',
         title: mode === 'create' ? 'Publication not created' : 'Publication not saved',
@@ -337,9 +359,9 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
       return;
     }
 
-    const result = mode === 'create'
+    const result = await (mode === 'create'
       ? createPublication(values)
-      : updatePublication(existingPublication.id, values);
+      : updatePublication(existingPublication.id, values));
 
     if (Object.keys(result.errors ?? {}).length) {
       setErrors(result.errors);
@@ -423,10 +445,10 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
           <div className="admin-form-header">
             <div>
               <p className="admin-section-kicker">{mode === 'create' ? 'Create Publication' : 'Edit Publication'}</p>
-              <h3>{mode === 'create' ? 'Build a new protected publication draft.' : `Refine ${existingPublication.title}.`}</h3>
+              <h3>{mode === 'create' ? 'Add a publication.' : `Edit ${existingPublication.title}`}</h3>
               <p className="admin-body-copy">
-                Capture ordered authorship, venue metadata, DOI, PDF linkage, and review state here.
-                The protected publication desk updates immediately once this draft is saved.
+                Capture ordered authorship, venue metadata, DOI, PDF linkage, and review state.
+                Saves persist to MongoDB; the public bibliography updates after the cache refreshes.
               </p>
             </div>
             <button type="button" className="admin-secondary-button" onClick={(event) => onNavigate(event, '/admin/publications')}>
@@ -470,13 +492,19 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
               </PublicationFormField>
 
               <PublicationFormField label="Status" error={errors.status}>
-                <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                {publicationStatusLocked ? (
+                  <p className="admin-body-copy">
+                    <strong>Published</strong> — only accounts with publish permission can change this state.
+                  </p>
+                ) : (
+                  <select value={values.status} onChange={(event) => updateField('status', event.target.value)}>
+                    {publicationStatusChoices.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </PublicationFormField>
 
               <PublicationFormField label="Record type" error={errors.entryType}>
@@ -568,7 +596,7 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
             <div className="admin-form-actions">
               <button type="submit" className="admin-logout-button">
                 <Save size={15} />
-                {mode === 'create' ? 'Save publication draft' : 'Save publication changes'}
+                {mode === 'create' ? 'Create publication' : 'Save changes'}
               </button>
               <button type="button" className="admin-secondary-button" onClick={handleBibtexExport}>
                 <Download size={15} />
@@ -581,15 +609,15 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
             </div>
           </form>
 
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete('publication') ? (
             <section className="admin-danger-zone">
               <div className="admin-panel-heading">
                 <Trash2 size={16} />
                 Danger zone
               </div>
               <p className="admin-body-copy">
-                Deleting this publication removes the record from the protected admin publication registry.
-                Type the publication slug to confirm before the draft is removed.
+                Deleting this publication removes the record from the database. Type the publication slug
+                to confirm.
               </p>
               <button type="button" className="admin-danger-button" onClick={() => setIsDeleteOpen(true)}>
                 <Trash2 size={15} />
@@ -607,7 +635,7 @@ export default function AdminPublicationFormPage({ mode, onNavigate, publication
         confirmValue={deleteConfirmation}
         description={
           existingPublication
-            ? `This removes ${existingPublication.title} from the protected publication draft store. Type "${existingPublication.slug}" to confirm the delete workflow.`
+            ? `This removes ${existingPublication.title} from the database. Type "${existingPublication.slug}" to confirm.`
             : ''
         }
         inputLabel="Type the publication slug to confirm"

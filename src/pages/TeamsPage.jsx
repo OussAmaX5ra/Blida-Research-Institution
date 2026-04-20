@@ -60,7 +60,7 @@ function SectionIntro({ eyebrow, title, description, action, onNavigate }) {
   );
 }
 
-function TeamCard({ team, members, projects, publications, onNavigate }) {
+function TeamCard({ team, members, projects, publications, researchAxes, onNavigate }) {
   const relatedAxis = researchAxes.find((axis) => axis.id === team.axisId);
   const relatedMembers = members.filter((member) => member.team?.slug === team.slug);
   const relatedProjects = projects.filter((project) => project.team?.slug === team.slug);
@@ -517,6 +517,7 @@ export default function TeamsPage({ onNavigate }) {
               members={members}
               projects={projects}
               publications={publications}
+              researchAxes={researchAxes}
               onNavigate={onNavigate}
             />
           ))}

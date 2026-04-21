@@ -26,7 +26,7 @@ function formatDate(dateString) {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-function ProgressCard({ record, onNavigate }) {
+function ProgressCard({ record }) {
   const status = statusColors[record.status] || statusColors.Pending;
   const milestoneLabel = milestoneTypeLabels[record.milestoneType] || record.milestoneType;
 

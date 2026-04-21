@@ -4,6 +4,7 @@ This folder contains the planning and implementation documents for the Blida Res
 
 ## What Is Here
 
+- `website-documentation.md`: Complete guide to the entire website including all pages, features, API endpoints, and technical details
 - `PRD.md`: product scope, goals, and feature requirements
 - `Task.md`: milestone tracker and current delivery status
 - `public-information-architecture.md`: public site route and page planning

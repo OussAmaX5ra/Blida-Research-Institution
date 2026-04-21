@@ -115,10 +115,11 @@ function SelectField({ label, value, options, onChange, dark = false }) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={`mt-3 w-full bg-transparent text-base outline-none ${dark ? 'text-white' : 'text-black/84'}`}
+        style={{ color: dark ? 'white' : 'var(--color-ink)' }}
       >
-        <option value="">{label === 'Year' ? 'All years' : `All ${label.toLowerCase()}s`}</option>
+        <option value="" style={{ background: dark ? '#1a1a2e' : 'white' }}>{label === 'Year' ? 'All years' : `All ${label.toLowerCase()}s`}</option>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} style={{ color: dark ? 'white' : 'var(--color-ink)', background: dark ? '#1a1a2e' : 'white' }}>
             {option.label}
           </option>
         ))}

@@ -11,6 +11,7 @@ import {
   getRefreshTokenExpiresAt,
   hashToken,
 } from "../../utils/auth-tokens.js";
+import { logActivity } from "../../utils/activity-logger.js";
 import { verifyPassword } from "../../utils/password.js";
 import {
   resolveAuthenticatedAdminFromRefreshCookie,
@@ -77,6 +78,14 @@ export async function loginAdmin({ email, password, request }) {
   user.lastLoginAt = new Date();
   await user.save();
 
+  await logActivity({
+    action: "user.login",
+    entityType: "user",
+    entityId: user.id,
+    userId: user.id,
+    request,
+  });
+
   return {
     accessToken,
     refreshToken,
@@ -120,10 +129,20 @@ export async function logoutAdminSession(request) {
     return;
   }
 
+  const userId = request.authSession.userId;
+
   await AuthSession.findByIdAndUpdate(request.authSession.id, {
     $set: {
       revokedAt: new Date(),
     },
+  });
+
+  await logActivity({
+    action: "user.logout",
+    entityType: "user",
+    entityId: userId,
+    userId,
+    request,
   });
 }
 
@@ -136,6 +155,15 @@ export async function logoutAllAdminSessions(request) {
   }
 
   await revokeAllSessionsForUser(request.user.id);
+
+  await logActivity({
+    action: "user.logout",
+    entityType: "user",
+    entityId: request.user.id,
+    userId: request.user.id,
+    metadata: { allSessions: true },
+    request,
+  });
 }
 
 export async function getCurrentAdmin(request) {

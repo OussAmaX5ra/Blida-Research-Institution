@@ -10,6 +10,7 @@ import { SiteConfig } from "../../models/site-config.js";
 import { Team } from "../../models/team.js";
 import { User } from "../../models/user.js";
 import { AppError } from "../../utils/app-error.js";
+import { logActivity } from "../../utils/activity-logger.js";
 import { hashPassword } from "../../utils/password.js";
 import { hasPermission, RBAC_PERMISSIONS } from "../../utils/rbac.js";
 import { adminContentSchemas } from "../../validators/admin-content-schemas.js";
@@ -259,13 +260,21 @@ export async function listAdminContent(entityType) {
   };
 }
 
-export async function createAdminContent(entityType, values, user) {
+export async function createAdminContent(entityType, values, user, request) {
   const model = getEntityModel(entityType);
   const validatedValues = await validateEntityInput(entityType, values);
   assertPublishedStatusAllowed(user, entityType, validatedValues, null);
 
   try {
     const createdRecord = await model.create(validatedValues);
+
+    await logActivity({
+      action: `${entityType}.create`,
+      entityType,
+      entityId: createdRecord._id,
+      userId: user._id,
+      request,
+    });
 
     return {
       data: serializeAdminRecord(createdRecord.toObject()),
@@ -279,7 +288,7 @@ export async function createAdminContent(entityType, values, user) {
   }
 }
 
-export async function updateAdminContent(entityType, id, values, user) {
+export async function updateAdminContent(entityType, id, values, user, request) {
   const model = getEntityModel(entityType);
   const existingRecord = await model.findById(id).lean();
 
@@ -293,6 +302,8 @@ export async function updateAdminContent(entityType, id, values, user) {
   const validatedValues = await validateEntityInput(entityType, values, id);
   assertPublishedStatusAllowed(user, entityType, validatedValues, existingRecord.status);
 
+  const isPublishing = validatedValues.status === "Published" && existingRecord.status !== "Published";
+
   try {
     const updatedRecord = await model
       .findByIdAndUpdate(id, validatedValues, {
@@ -300,6 +311,14 @@ export async function updateAdminContent(entityType, id, values, user) {
         runValidators: true,
       })
       .lean();
+
+    await logActivity({
+      action: isPublishing ? `${entityType}.publish` : `${entityType}.update`,
+      entityType,
+      entityId: updatedRecord._id,
+      userId: user._id,
+      request,
+    });
 
     return {
       data: serializeAdminRecord(updatedRecord),
@@ -313,7 +332,7 @@ export async function updateAdminContent(entityType, id, values, user) {
   }
 }
 
-export async function deleteAdminContent(entityType, id) {
+export async function deleteAdminContent(entityType, id, userId, request) {
   const model = getEntityModel(entityType);
   const deletedRecord = await model.findByIdAndDelete(id).lean();
 
@@ -323,6 +342,14 @@ export async function deleteAdminContent(entityType, id) {
       statusCode: 404,
     });
   }
+
+  await logActivity({
+    action: `${entityType}.delete`,
+    entityType,
+    entityId: id,
+    userId,
+    request,
+  });
 
   return {
     data: serializeAdminRecord(deletedRecord),
@@ -365,7 +392,7 @@ function buildTemporaryPassword() {
   return `BRI-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export async function createAdminUser(values, currentUserId) {
+export async function createAdminUser(values, currentUserId, request) {
   const schema = z.object({
     email: z.string().email("Enter a valid email address.").trim().toLowerCase(),
     fullName: z.string().min(1, "Full name is required.").trim(),
@@ -396,6 +423,15 @@ export async function createAdminUser(values, currentUserId) {
     mustChangePassword: true,
   });
 
+  await logActivity({
+    action: "user.create",
+    entityType: "user",
+    entityId: newUser._id,
+    userId: currentUserId,
+    metadata: { email, role },
+    request,
+  });
+
   return {
     data: serializeAdminUser(newUser.toObject(), currentUserId),
     temporaryPassword,
@@ -410,7 +446,7 @@ export async function listAdminUsers(currentUserId) {
   };
 }
 
-export async function updateAdminUserAccess(accountId, values, currentUserId) {
+export async function updateAdminUserAccess(accountId, values, currentUserId, request) {
   const schema = z.object({
     role: z.enum(["super_admin", "content_admin", "editor"]),
     status: z.enum(["active", "inactive", "locked"]),
@@ -431,6 +467,8 @@ export async function updateAdminUserAccess(accountId, values, currentUserId) {
     );
   }
 
+  const existingUser = await User.findById(accountId).lean();
+  
   const updatedUser = await User.findByIdAndUpdate(
     accountId,
     {
@@ -452,12 +490,37 @@ export async function updateAdminUserAccess(accountId, values, currentUserId) {
     });
   }
 
+  if (existingUser?.role !== parsed.data.role) {
+    await logActivity({
+      action: "user.role_change",
+      entityType: "user",
+      entityId: accountId,
+      userId: currentUserId,
+      metadata: { oldRole: existingUser?.role, newRole: parsed.data.role },
+      request,
+    });
+  }
+
+  if (existingUser?.status !== parsed.data.status) {
+    const action = parsed.data.status === "locked" ? "user.lock" : parsed.data.status === "active" ? "user.unlock" : null;
+    if (action) {
+      await logActivity({
+        action,
+        entityType: "user",
+        entityId: accountId,
+        userId: currentUserId,
+        metadata: { oldStatus: existingUser?.status, newStatus: parsed.data.status },
+        request,
+      });
+    }
+  }
+
   return {
     data: serializeAdminUser(updatedUser, currentUserId),
   };
 }
 
-export async function resetAdminUserPassword(accountId, currentUserId) {
+export async function resetAdminUserPassword(accountId, currentUserId, request) {
   if (accountId === currentUserId) {
     throw new AppError(
       "Reset the current signed-in account from a different administrative session.",
@@ -484,6 +547,15 @@ export async function resetAdminUserPassword(accountId, currentUserId) {
   user.passwordResetAt = issuedAt;
   user.passwordResetReference = `RESET-${Date.now().toString(36).toUpperCase()}`;
   await user.save();
+
+  await logActivity({
+    action: "user.password_reset",
+    entityType: "user",
+    entityId: accountId,
+    userId: currentUserId,
+    metadata: { email: user.email },
+    request,
+  });
 
   return {
     data: serializeAdminUser(user.toObject(), currentUserId),

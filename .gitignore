@@ -12,9 +12,14 @@ skills-lock.json
 .env
 .env.local
 .env.*
+!.env.production.example
 server/.env
 server/.env.local
 server/.env.*
+
+# Docker
+.dockerignore
+docker-compose.override.yml
 
 # MongoDB
 mongosh-*/
@@ -25,3 +30,8 @@ server/src/scripts/seed-*.js
 server/src/scripts/verify-*.js
 server/src/scripts/export-*.js
 server/src/scripts/create-admin-*.js
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/

@@ -492,6 +492,8 @@ export default function HomePage({ onNavigate }) {
                 <img
                   src={item.image}
                   alt={item.headline}
+                  loading="lazy"
+                  decoding="async"
                   className={`w-full object-cover ${index === 0 ? 'h-56 sm:h-64 md:h-72' : 'h-44 sm:h-52'}`}
                 />
                 <figcaption className="border-t border-black/8 bg-white/80 p-4">

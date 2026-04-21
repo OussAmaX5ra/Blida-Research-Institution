@@ -111,7 +111,7 @@ adminContentRouter.post(
   requirePermissions(RBAC_PERMISSIONS.USERS_CREATE),
   async (request, response, next) => {
     try {
-      const result = await createAdminUser(request.body, request.user.id);
+      const result = await createAdminUser(request.body, request.user.id, request);
       response.status(201).json(result);
     } catch (error) {
       next(error);
@@ -128,7 +128,7 @@ adminContentRouter.patch(
     try {
       response
         .status(200)
-        .json(await updateAdminUserAccess(request.validated.params.id, request.body, request.user.id));
+        .json(await updateAdminUserAccess(request.validated.params.id, request.body, request.user.id, request));
     } catch (error) {
       next(error);
     }
@@ -144,7 +144,7 @@ adminContentRouter.post(
     try {
       response
         .status(200)
-        .json(await resetAdminUserPassword(request.validated.params.id, request.user.id));
+        .json(await resetAdminUserPassword(request.validated.params.id, request.user.id, request));
     } catch (error) {
       next(error);
     }
@@ -174,7 +174,7 @@ adminContentRouter.post(
     try {
       response
         .status(201)
-        .json(await createAdminContent(request.validated.params.entityType, request.body, request.user));
+        .json(await createAdminContent(request.validated.params.entityType, request.body, request.user, request));
     } catch (error) {
       next(error);
     }
@@ -191,7 +191,7 @@ adminContentRouter.put(
   async (request, response, next) => {
     try {
       const { entityType, id } = request.validated.params;
-      response.status(200).json(await updateAdminContent(entityType, id, request.body, request.user));
+      response.status(200).json(await updateAdminContent(entityType, id, request.body, request.user, request));
     } catch (error) {
       next(error);
     }
@@ -208,7 +208,7 @@ adminContentRouter.delete(
   async (request, response, next) => {
     try {
       const { entityType, id } = request.validated.params;
-      response.status(200).json(await deleteAdminContent(entityType, id));
+      response.status(200).json(await deleteAdminContent(entityType, id, request.user.id, request));
     } catch (error) {
       next(error);
     }

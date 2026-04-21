@@ -12,6 +12,7 @@ import { Project } from "../models/project.js";
 import { Publication } from "../models/publication.js";
 import { SiteConfig } from "../models/site-config.js";
 import { Team } from "../models/team.js";
+import { User } from "../models/user.js";
 
 const ENTITY_MODELS = {
   gallery: GalleryItem,
@@ -21,6 +22,7 @@ const ENTITY_MODELS = {
   projects: Project,
   publications: Publication,
   teams: Team,
+  users: User,
 };
 
 function parseArgs(argv) {

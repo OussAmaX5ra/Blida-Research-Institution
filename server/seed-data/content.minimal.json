@@ -1,4 +1,13 @@
 {
+  "users": [
+    {
+      "email": "admin@blida-research.example.org",
+      "fullName": "Admin User",
+      "passwordHash": "$2b$12$1HVOdJsNHOO7sj9HdN40YObg4/4PLOP9QhVv0mxn2/gN.VPl.Z6Yu",
+      "role": "super_admin",
+      "status": "active"
+    }
+  ],
   "siteConfig": {
     "_id": "default",
     "contactInfo": {

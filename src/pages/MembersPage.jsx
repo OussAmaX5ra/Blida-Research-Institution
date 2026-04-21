@@ -53,10 +53,15 @@ function SelectField({ label, value, options, onChange }) {
   return (
     <label className="rounded-[1.4rem] border border-black/8 bg-white/72 px-4 py-4">
       <span className="text-[11px] uppercase tracking-[0.24em] text-black/42">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-3 w-full bg-transparent text-base outline-none">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-3 w-full bg-transparent text-base outline-none"
+        style={{ color: 'var(--color-ink)' }}
+      >
         <option value="">All {label.toLowerCase()}s</option>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option key={option.value} value={option.value} style={{ color: 'var(--color-ink)' }}>
             {option.label}
           </option>
         ))}

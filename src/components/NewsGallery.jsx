@@ -15,7 +15,7 @@ const NewsCard = memo(function NewsCard({ item, featured = false }) {
     return (
       <article className="relative overflow-hidden rounded-sm group cursor-pointer row-span-2" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
         <div className="absolute inset-0">
-          <img src={item.image} alt={item.headline} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={item.image} alt={item.headline} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,17,23,0.95) 40%, rgba(13,17,23,0.3) 100%)' }} />
         </div>
         <div className="relative h-full min-h-[400px] flex flex-col justify-end p-6">
@@ -72,7 +72,7 @@ export default function NewsGallery() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {news.map((item) => (
               <div key={item.id || item.slug} className="aspect-video rounded-sm overflow-hidden relative group cursor-pointer" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                <img src={item.image} alt={item.headline} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+<img src={item.image} alt={item.headline} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 flex items-end p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: 'linear-gradient(to top, rgba(13,17,23,0.85), transparent)' }}>
                   <p className="text-white text-xs font-medium leading-snug line-clamp-2">{item.headline}</p>
                 </div>

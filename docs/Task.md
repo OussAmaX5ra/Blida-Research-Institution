@@ -150,28 +150,28 @@ Prepare the platform for stable, secure, accessible, and production-ready deploy
 
 ### Tasks
 
-- `[ ]` Add backend API tests for critical routes
-- `[ ]` Add frontend tests for key user flows
-- `[ ]` Test authentication and authorization edge cases
-- `[ ]` Test CRUD flows across all major entities
-- `[ ]` Test publication search and filters with realistic data
-- `[ ]` Test citation export end-to-end
-- `[ ]` Test the PhD progress tracker end-to-end
-- `[ ]` Run accessibility review and fix keyboard, contrast, and labeling issues
-- `[ ]` Review semantic HTML and screen-reader behavior
-- `[ ]` Optimize public page performance and bundle size
-- `[ ]` Optimize gallery and media loading
-- `[ ]` Review large-list pagination, loading, and empty states
-- `[ ]` Run security review for auth, cookies, validation, rate limiting, and protected routes
-- `[ ]` Add audit logging review and sensitive action verification
-- `[ ]` Prepare environment variables and deployment configuration
-- `[ ]` Prepare production build pipeline
-- `[ ]` Validate deployment readiness checklist
-- `[ ]` Perform final smoke test on production-like environment
+- `[x]` Add backend API tests for critical routes
+- `[x]` Add frontend tests for key user flows
+- `[x]` Test authentication and authorization edge cases
+- `[x]` Test CRUD flows across all major entities
+- `[x]` Test publication search and filters with realistic data
+- `[x]` Test citation export end-to-end
+- `[x]` Test the PhD progress tracker end-to-end
+- `[x]` Run accessibility review and fix keyboard, contrast, and labeling issues
+- `[x]` Review semantic HTML and screen-reader behavior
+- `[x]` Optimize public page performance and bundle size
+- `[x]` Optimize gallery and media loading
+- `[x]` Review large-list pagination, loading, and empty states
+- `[x]` Run security review for auth, cookies, validation, rate limiting, and protected routes
+- `[x]` Add audit logging review and sensitive action verification
+- `[x]` Prepare environment variables and deployment configuration
+- `[x]` Prepare production build pipeline
+- `[x]` Validate deployment readiness checklist
+- `[x]` Perform final smoke test on production-like environment
 
 ### Milestone Status
 
-- `[ ]` Milestone 5 complete
+- `[x]` Milestone 5 complete
 
 ## Current Progress Snapshot
 
@@ -181,4 +181,4 @@ Prepare the platform for stable, secure, accessible, and production-ready deploy
 - `[x]` Public frontend and backend are connected through `/api/*` endpoints
 - `[x]` Public content is database-backed
 - `[x]` Runtime mock-data imports removed from server and client
-- `[ ]` Production-ready release achieved
+- `[x]` Production-ready release achieved

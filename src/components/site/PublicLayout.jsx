@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   ChevronRight,
   Menu,
@@ -40,6 +41,33 @@ function NavLink({
 
 function PublicHeader({ currentRoute, onNavigate }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navRailRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollButtons = () => {
+    if (navRailRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = navRailRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    updateScrollButtons();
+    window.addEventListener('resize', updateScrollButtons);
+    return () => window.removeEventListener('resize', updateScrollButtons);
+  }, []);
+
+  const scrollNav = (direction) => {
+    if (navRailRef.current) {
+      const scrollAmount = 200;
+      navRailRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   // Close mobile menu when route changes
   const prevRouteRef = useRef(currentRoute?.path);
@@ -75,19 +103,43 @@ function PublicHeader({ currentRoute, onNavigate }) {
         </a>
 
         <nav className="hidden flex-1 items-center justify-center lg:flex">
-          <ul className="nav-rail">
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scrollNav('left')}
+              className="nav-scroll-btn nav-scroll-left"
+              aria-label="Scroll navigation left"
+            >
+              <ArrowLeft size={16} />
+            </button>
+          )}
+          <ul
+            ref={navRailRef}
+            className={`nav-rail ${canScrollLeft ? 'scroll-left' : ''} ${canScrollRight ? 'scroll-right' : ''}`}
+            onScroll={updateScrollButtons}
+          >
             {publicPrimaryNavigation.map((route) => (
               <li key={route.id}>
                 <NavLink
                   route={route}
                   currentRoute={currentRoute}
                   onNavigate={onNavigate}
-                  className="inline-flex"
+                  className="inline-flex shrink-0"
                   variant="primary"
                 />
               </li>
             ))}
           </ul>
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scrollNav('right')}
+              className="nav-scroll-btn nav-scroll-right"
+              aria-label="Scroll navigation right"
+            >
+              <ArrowRight size={16} />
+            </button>
+          )}
         </nav>
 
         <div className="ml-auto hidden items-center gap-3 lg:flex">
@@ -323,9 +375,15 @@ function PublicFooter({ currentRoute, onNavigate }) {
 export default function PublicLayout({ currentRoute, onNavigate, children }) {
   return (
     <div className="site-frame">
+      <a
+        href="#main-content"
+        className="skip-link"
+      >
+        Skip to main content
+      </a>
       <PublicHeader currentRoute={currentRoute} onNavigate={onNavigate} />
 
-      <main className="site-main shell-width">
+      <main id="main-content" className="site-main shell-width">
         <Breadcrumbs currentRoute={currentRoute} />
         {children ?? <RoutePreview currentRoute={currentRoute} />}
       </main>

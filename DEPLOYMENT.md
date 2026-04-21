@@ -10,10 +10,7 @@
 
 1. **Edit production environment variables:**
 
-```bash
-cp .env.production.example .env.production
-# Edit .env.production with your values
-```
+Edit `.env.production` with your production values before starting the container.
 
 2. **Build and start the container:**
 
@@ -69,8 +66,7 @@ scp -r . user@your-server:/opt/blida-research
 ```bash
 ssh user@your-server
 cd /opt/blida-research
-cp .env.production.example .env.production
-nano .env.production  # Update with production values
+nano .env.production
 ```
 
 3. **Run with Docker Compose:**
@@ -95,8 +91,8 @@ Point your domain to the Docker container port 3000.
 # Check logs
 docker-compose logs
 
-# Verify .env.production exists
-cat .env.production
+# Validate nginx config inside the image
+docker-compose run --rm web nginx -p /tmp/nginx -c /etc/nginx/nginx.conf -t
 ```
 
 ### MongoDB connection error

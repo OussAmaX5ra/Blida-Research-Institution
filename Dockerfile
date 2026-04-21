@@ -40,16 +40,21 @@ COPY server/seed-data ./seed-data
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/dist ./dist
 
-# Create nginx config
-RUN apk add --no-cache nginx
+# Install nginx and prepare writable runtime paths for non-root startup
+RUN apk add --no-cache nginx && \
+    addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    mkdir -p /tmp/nginx/logs \
+             /tmp/nginx/conf \
+             /tmp/nginx/client_body \
+             /tmp/nginx/proxy \
+             /tmp/nginx/fastcgi \
+             /tmp/nginx/uwsgi \
+             /tmp/nginx/scgi && \
+    chown -R nodejs:nodejs /app /tmp/nginx
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/http.d/default.conf
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 && \
-    chown -R nodejs:nodejs /app
+COPY nginx.conf /etc/nginx/nginx.conf
 
 USER nodejs
 
@@ -61,4 +66,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Start nginx (which proxies to node backend)
-CMD ["sh", "-c", "node src/server.js & nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "node src/server.js & nginx -p /tmp/nginx -c /etc/nginx/nginx.conf -g 'daemon off;'"]

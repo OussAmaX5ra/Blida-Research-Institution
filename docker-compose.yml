@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build:
@@ -12,8 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
       - CLIENT_ORIGIN=http://localhost:3000
       - LOG_LEVEL=info
     env_file:
@@ -24,8 +20,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    volumes:
-      - ./dist:/app/dist:ro
     networks:
       - app-network
 

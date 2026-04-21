@@ -21,6 +21,32 @@ function isReservedSlug(slug) {
   return RESERVED_SLUGS.has(normalizeText(slug));
 }
 
+export function createValidationError(details) {
+  const error = new Error("Validation failed.");
+  error.name = "ValidationError";
+  error.statusCode = 400;
+  error.details = details;
+  return error;
+}
+
+export function formatSchemaIssues(issues) {
+  return issues.map((issue) => ({
+    message: issue.message,
+    path: issue.path.join("."),
+    source: "body",
+  }));
+}
+
+export function buildDuplicateFieldError(field, message) {
+  return createValidationError([
+    {
+      message,
+      path: field,
+      source: "body",
+    },
+  ]);
+}
+
 const slugSchema = z
   .string()
   .trim()
@@ -165,5 +191,43 @@ export const adminContentSchemas = {
     }),
     summary: z.string().trim().min(40, "Use at least 40 characters so the institutional summary is meaningful."),
     themes: listFromUnknownSchema.refine((value) => value.length > 0, "Add at least one scientific theme."),
+  }),
+  phdProgress: z.object({
+    title: z.string().trim().min(1, "Title is required."),
+    slug: slugSchema,
+    description: z.string().trim().optional(),
+    memberSlug: z.string().trim().min(1, "Assign a PhD student."),
+    projectSlug: z.string().trim().optional(),
+    teamSlug: z.string().trim().optional(),
+    status: z.enum(["Pending", "In Progress", "Completed", "Deferred"], {
+      errorMap: () => ({ message: "Choose Pending, In Progress, Completed, or Deferred." }),
+    }),
+    milestoneType: z.enum(
+      ["Coursework", "Qualifying", "Comprehensive", "Proposal", "Research", "Defense", "Other"],
+      { errorMap: () => ({ message: "Choose a valid milestone type." }) },
+    ),
+    dueDate: isoDateSchema.optional().or(z.literal("")),
+    completedAt: isoDateSchema.optional().or(z.literal("")),
+    visibility: z.enum(["Public", "Private"], {
+      errorMap: () => ({ message: "Choose Public or Private visibility." }),
+    }),
+    notes: z
+      .array(
+        z.object({
+          content: z.string().trim().min(1, "Note content is required."),
+          author: z.string().trim().optional(),
+          createdAt: isoDateSchema.optional(),
+        }),
+      )
+      .default([]),
+    attachments: z
+      .array(
+        z.object({
+          label: z.string().trim().min(1, "Label is required."),
+          url: z.string().trim().url("Use a valid URL."),
+          kind: z.enum(["pdf", "presentation", "document", "other"]).optional(),
+        }),
+      )
+      .default([]),
   }),
 };

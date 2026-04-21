@@ -5,6 +5,7 @@ import {
   getPublicGalleryItem,
   getPublicMember,
   getPublicNewsItem,
+  getPublicPhdProgress,
   getPublicProject,
   getPublicPublication,
   getPublicSiteContext,
@@ -12,9 +13,11 @@ import {
   listPublicGallery,
   listPublicMembers,
   listPublicNews,
+  listPublicPhdProgress,
   listPublicProjects,
   listPublicPublications,
   listPublicTeams,
+  getPublicPublicationCitation,
 } from "./public-service.js";
 
 const publicRouter = Router();
@@ -117,6 +120,17 @@ publicRouter.get("/publications/:identifier", async (request, response, next) =>
   }
 });
 
+publicRouter.get("/publications/:identifier/citation", async (request, response, next) => {
+  try {
+    const format = request.query.format || "bibtex";
+    response
+      .status(200)
+      .json(await getPublicPublicationCitation(request.params.identifier, format));
+  } catch (error) {
+    next(error);
+  }
+});
+
 publicRouter.get("/news", async (request, response, next) => {
   try {
     response.status(200).json(await listPublicNews(getQueryFilters(request.query)));
@@ -144,6 +158,24 @@ publicRouter.get("/gallery", async (request, response, next) => {
 publicRouter.get("/gallery/:identifier", async (request, response, next) => {
   try {
     response.status(200).json(await getPublicGalleryItem(request.params.identifier));
+  } catch (error) {
+    next(error);
+  }
+});
+
+publicRouter.get("/phd-progress", async (request, response, next) => {
+  try {
+    response
+      .status(200)
+      .json(await listPublicPhdProgress(getQueryFilters(request.query)));
+  } catch (error) {
+    next(error);
+  }
+});
+
+publicRouter.get("/phd-progress/:identifier", async (request, response, next) => {
+  try {
+    response.status(200).json(await getPublicPhdProgress(request.params.identifier));
   } catch (error) {
     next(error);
   }

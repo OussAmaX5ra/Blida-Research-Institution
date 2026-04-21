@@ -1,11 +1,13 @@
 import { GalleryItem } from "../../models/gallery-item.js";
 import { Member } from "../../models/member.js";
 import { NewsItem } from "../../models/news-item.js";
+import { PhDProgress } from "../../models/phd-progress.js";
 import { Project } from "../../models/project.js";
 import { Publication } from "../../models/publication.js";
 import { SiteConfig } from "../../models/site-config.js";
 import { Team } from "../../models/team.js";
 import { AppError } from "../../utils/app-error.js";
+import { generateBibtex, generateApa } from "../../utils/format-citation.js";
 
 const roleOrder = ["Professor", "Doctor", "PhD Student"];
 
@@ -119,7 +121,7 @@ function getByIdentifier(records, identifier, entityLabel) {
 }
 
 async function loadPublicSourceData() {
-  const [siteConfig, teams, members, projects, publications, news, gallery] = await Promise.all([
+  const [siteConfig, teams, members, projects, publications, news, gallery, phdProgress] = await Promise.all([
     SiteConfig.findById("default").lean(),
     Team.find().sort({ name: 1 }).lean(),
     Member.find().sort({ name: 1 }).lean(),
@@ -127,6 +129,7 @@ async function loadPublicSourceData() {
     Publication.find().sort({ year: -1, title: 1 }).lean(),
     NewsItem.find().sort({ dateIso: -1, headline: 1 }).lean(),
     GalleryItem.find().sort({ dateIso: -1, title: 1 }).lean(),
+    PhDProgress.find({ visibility: "Public" }).sort({ dueDate: 1 }).lean(),
   ]);
 
   const axes = siteConfig?.researchAxes ?? [];
@@ -268,7 +271,9 @@ async function loadPublicSourceData() {
       doi: publication.doi,
       entryType: publication.entryType,
       id: publication._id.toString(),
+      issue: publication.issue,
       journal: publication.journal,
+      pages: publication.pages,
       pdfLink: publication.pdfLink,
       publisher: publication.publisher,
       slug: publication.slug,
@@ -278,6 +283,7 @@ async function loadPublicSourceData() {
       teamTag: team?.acronym ?? "",
       themes: publication.themes,
       title: publication.title,
+      volume: publication.volume,
       year: publication.year,
     };
   });
@@ -321,10 +327,33 @@ async function loadPublicSourceData() {
     };
   });
 
+  const phdProgressRecords = (phdProgress ?? []).map((record) => {
+    const team = record.teamSlug ? publicTeamBySlug.get(record.teamSlug) ?? null : null;
+    const member = memberRecords.find((m) => m.slug === record.memberSlug) ?? null;
+    const project = projectRecords.find((p) => p.slug === record.projectSlug) ?? null;
+
+    return {
+      completedAt: record.completedAt,
+      description: record.description,
+      dueDate: record.dueDate,
+      id: record._id.toString(),
+      member: member ? { name: member.name, slug: member.slug } : null,
+      milestoneType: record.milestoneType,
+      project: project ? { slug: project.slug, title: project.title } : null,
+      slug: record.slug,
+      status: record.status,
+      team: serializeTeamSummary(team),
+      teamSlug: team?.slug ?? record.teamSlug ?? "",
+      teamTag: team?.acronym ?? "",
+      title: record.title,
+    };
+  });
+
   return {
     galleryRecords,
     memberRecords,
     newsRecords,
+    phdProgressRecords,
     projectRecords,
     publicationRecords,
     siteConfig: {
@@ -642,5 +671,79 @@ export async function getPublicGalleryItem(identifier) {
 
   return {
     data: getByIdentifier(galleryRecords, identifier, "Gallery item"),
+  };
+}
+
+export async function getPublicPublicationCitation(identifier, format) {
+  const { publicationRecords } = await loadPublicSourceData();
+  const publication = getByIdentifier(publicationRecords, identifier, "Publication");
+
+  const citation = format === "apa" ? generateApa(publication) : generateBibtex(publication);
+
+  return {
+    data: {
+      citation,
+      format,
+      publicationId: publication.id,
+      title: publication.title,
+    },
+  };
+}
+
+function filterPhdProgress(records, filters = {}) {
+  return records.filter((record) => {
+    const matchesQuery = filters.query
+      ? [record.title, record.description].some((value) =>
+          normalizeText(value).includes(normalizeText(filters.query)),
+        )
+      : true;
+    const matchesMember = filters.member
+      ? normalizeText(record.member?.slug) === normalizeText(filters.member)
+      : true;
+    const matchesTeam = filters.team
+      ? normalizeText(record.teamSlug) === normalizeText(filters.team)
+      : true;
+    const matchesStatus = filters.status
+      ? normalizeText(record.status) === normalizeText(filters.status)
+      : true;
+
+    return matchesQuery && matchesMember && matchesTeam && matchesStatus;
+  });
+}
+
+export async function listPublicPhdProgress(filters = {}) {
+  const { phdProgressRecords } = await loadPublicSourceData();
+  const records = filterPhdProgress(phdProgressRecords, filters);
+
+  return {
+    data: records,
+    meta: buildMeta(records, filters),
+  };
+}
+
+export async function getPublicPhdProgress(identifier) {
+  const { phdProgressRecords, memberRecords, projectRecords } = await loadPublicSourceData();
+  const record = getByIdentifier(phdProgressRecords, identifier, "PhD progress record");
+
+  const member = memberRecords.find((m) => m.slug === record.member?.slug) ?? null;
+  const project = record.project?.slug
+    ? projectRecords.find((p) => p.slug === record.project.slug) ?? null
+    : null;
+
+  return {
+    data: {
+      ...record,
+      member: member
+        ? {
+            avatar: member.avatar,
+            id: member.id,
+            name: member.name,
+            role: member.role,
+            slug: member.slug,
+            team: member.team,
+          }
+        : null,
+      project,
+    },
   };
 }

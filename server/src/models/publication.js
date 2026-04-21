@@ -70,6 +70,18 @@ const publicationSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    volume: {
+      type: String,
+      trim: true,
+    },
+    issue: {
+      type: String,
+      trim: true,
+    },
+    pages: {
+      type: String,
+      trim: true,
+    },
   },
   {
     collection: "publications",

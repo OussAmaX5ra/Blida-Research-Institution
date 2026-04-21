@@ -9,5 +9,6 @@ export function serializeAuthenticatedUser(user) {
     permissions: getRolePermissions(user.role),
     role: user.role,
     status: user.status,
+    lastProfileUpdate: user.lastProfileUpdate ?? null,
   };
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { GalleryItem } from "../../models/gallery-item.js";
 import { Member } from "../../models/member.js";
 import { NewsItem } from "../../models/news-item.js";
+import { PhDProgress } from "../../models/phd-progress.js";
 import { Project } from "../../models/project.js";
 import { Publication } from "../../models/publication.js";
 import { SiteConfig } from "../../models/site-config.js";
@@ -17,6 +18,7 @@ const ENTITY_MODELS = {
   gallery: GalleryItem,
   member: Member,
   news: NewsItem,
+  phd_progress: PhDProgress,
   project: Project,
   publication: Publication,
   team: Team,
@@ -26,6 +28,7 @@ const entityLabels = {
   gallery: "Gallery item",
   member: "Member",
   news: "News item",
+  phd_progress: "PhD progress record",
   project: "Project",
   publication: "Publication",
   team: "Team",
@@ -360,6 +363,43 @@ function serializeAdminUser(user, currentUserId) {
 
 function buildTemporaryPassword() {
   return `BRI-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export async function createAdminUser(values, currentUserId) {
+  const schema = z.object({
+    email: z.string().email("Enter a valid email address.").trim().toLowerCase(),
+    fullName: z.string().min(1, "Full name is required.").trim(),
+    role: z.enum(["content_admin", "editor"]),
+  });
+  const parsed = schema.safeParse(values);
+
+  if (!parsed.success) {
+    throw createValidationError(formatSchemaIssues(parsed.error.issues));
+  }
+
+  const { email, fullName, role } = parsed.data;
+
+  const existingEmail = await User.findOne({ email }).select({ _id: 1 }).lean();
+  if (existingEmail) {
+    throw buildDuplicateFieldError("email", "An account with this email already exists.");
+  }
+
+  const temporaryPassword = buildTemporaryPassword();
+  const passwordHash = await hashPassword(temporaryPassword);
+
+  const newUser = await User.create({
+    email,
+    fullName,
+    passwordHash,
+    role,
+    status: "active",
+    mustChangePassword: true,
+  });
+
+  return {
+    data: serializeAdminUser(newUser.toObject(), currentUserId),
+    temporaryPassword,
+  };
 }
 
 export async function listAdminUsers(currentUserId) {

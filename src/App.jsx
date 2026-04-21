@@ -23,6 +23,7 @@ import GalleryPage from './pages/GalleryPage';
 import MembersPage from './pages/MembersPage';
 import NewsDetailsPage from './pages/NewsDetailsPage';
 import NewsPage from './pages/NewsPage';
+import PhdProgressPage from './pages/PhdProgressPage';
 import PublicationDetailsPage from './pages/PublicationDetailsPage';
 import ProjectsPage from './pages/ProjectsPage';
 import PublicationsPage from './pages/PublicationsPage';
@@ -35,6 +36,7 @@ import { useAdminSession } from './providers/useAdminSession.js';
 import { usePublicData } from './providers/usePublicData.js';
 import { applyDocumentMetadata, buildRouteMetadata } from './site/documentMetadata';
 import AdminActivityPage from './pages/admin/AdminActivityPage.jsx';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage.jsx';
 import AdminAbilitiesProvider from './providers/AdminAbilitiesProvider.jsx';
 import { canAccessAdminRoute } from './lib/admin-permission-utils.js';
 
@@ -186,6 +188,9 @@ export default function App() {
   const publicationsPage = currentRoute?.id === 'publications'
     ? <PublicationsPage onNavigate={handleNavigate} />
     : null;
+  const phdProgressPage = currentRoute?.id === 'phd-progress'
+    ? <PhdProgressPage onNavigate={handleNavigate} />
+    : null;
   const newsPage = currentRoute?.id === 'news'
     ? <NewsPage onNavigate={handleNavigate} />
     : null;
@@ -224,6 +229,9 @@ export default function App() {
     : null;
   const adminActivityPage = currentRoute?.id === 'admin-activity'
     ? <AdminActivityPage />
+    : null;
+  const adminSettingsPage = currentRoute?.id === 'admin-settings'
+    ? <AdminSettingsPage />
     : null;
   const adminTeamCreatePage = currentRoute?.id === 'admin-team-create'
     ? <AdminTeamFormPage mode="create" onNavigate={handleNavigate} />
@@ -271,6 +279,7 @@ export default function App() {
     currentRoute.id !== 'admin-gallery' &&
     currentRoute.id !== 'admin-users' &&
     currentRoute.id !== 'admin-activity' &&
+    currentRoute.id !== 'admin-settings' &&
     currentRoute.id !== 'admin-team-create' &&
     currentRoute.id !== 'admin-team-edit' &&
     currentRoute.id !== 'admin-member-create' &&
@@ -332,6 +341,7 @@ export default function App() {
                 adminGalleryPage ??
                 adminUsersPage ??
                 adminActivityPage ??
+                adminSettingsPage ??
                 adminTeamCreatePage ??
                 adminTeamEditPage ??
                 adminMemberCreatePage ??
@@ -353,7 +363,7 @@ export default function App() {
 
   return (
     <PublicLayout currentRoute={currentRoute} onNavigate={handleNavigate}>
-      {homePage ?? aboutPage ?? researchAxesPage ?? teamsPage ?? membersPage ?? projectsPage ?? publicationsPage ?? newsPage ?? galleryPage ?? contactPage ?? adminLoginPage ?? newsDetailsPage ?? publicationDetailsPage ?? teamDetailsPage}
+      {homePage ?? aboutPage ?? researchAxesPage ?? teamsPage ?? membersPage ?? projectsPage ?? publicationsPage ?? phdProgressPage ?? newsPage ?? galleryPage ?? contactPage ?? adminLoginPage ?? newsDetailsPage ?? publicationDetailsPage ?? teamDetailsPage}
     </PublicLayout>
   );
 }

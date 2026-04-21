@@ -251,8 +251,10 @@ const PhDCard = memo(function PhDCard({ student, teamColorMap }) {
 
 export default function PhDTracker() {
   const { collections } = usePublicData();
-  const teams = collections?.teams ?? [];
-  const teamColorMap = useMemo(() => new Map(teams.map(t => [t.acronym, t.color])), [teams]);
+  const teamColorMap = useMemo(
+    () => new Map((collections?.teams ?? []).map(t => [t.acronym, t.color])),
+    [collections?.teams],
+  );
 
   return (
     <section id="phd-tracker" className="py-24 px-6" style={{ background: 'var(--color-ink)' }}>

@@ -55,6 +55,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    lastProfileUpdate: {
+      type: Date,
+    },
   },
   {
     collection: "users",

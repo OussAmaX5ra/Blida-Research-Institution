@@ -4,12 +4,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { env } from "../config/env.js";
 
 /** Global /api limiter: each page load + admin save triggers many requests (public collections, admin lists, validation, etc.). */
-const apiRateLimitMax =
-  typeof process.env.API_RATE_LIMIT_MAX === "string" && process.env.API_RATE_LIMIT_MAX.trim() !== ""
-    ? Number.parseInt(process.env.API_RATE_LIMIT_MAX, 10)
-    : env.NODE_ENV === "development"
-      ? 5000
-      : 800;
+const apiRateLimitMax = env.API_RATE_LIMIT_MAX ?? (env.NODE_ENV === "development" ? 5000 : 800);
 
 function sendRateLimitResponse(response, details) {
   response.status(429).json({
@@ -39,7 +34,7 @@ export const apiRateLimiter = rateLimit({
   },
   legacyHeaders: false,
   limit: Number.isFinite(apiRateLimitMax) && apiRateLimitMax > 0 ? apiRateLimitMax : 800,
-  skip: (request) => request.path === "/api/health",
+  skip: (request) => request.path === "/api/health" || request.path === "/api/admin/auth/me",
   standardHeaders: true,
   windowMs: 15 * 60 * 1000,
 });

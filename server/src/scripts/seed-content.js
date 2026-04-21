@@ -1,10 +1,13 @@
-/* globals process */
 import { readFile } from "node:fs/promises";
+
+import { config as loadEnv } from "dotenv";
+loadEnv();
 
 import { connectToDatabase, disconnectFromDatabase } from "../db/mongoose.js";
 import { GalleryItem } from "../models/gallery-item.js";
 import { Member } from "../models/member.js";
 import { NewsItem } from "../models/news-item.js";
+import { PhDProgress } from "../models/phd-progress.js";
 import { Project } from "../models/project.js";
 import { Publication } from "../models/publication.js";
 import { SiteConfig } from "../models/site-config.js";
@@ -14,6 +17,7 @@ const ENTITY_MODELS = {
   gallery: GalleryItem,
   members: Member,
   news: NewsItem,
+  phd_progress: PhDProgress,
   projects: Project,
   publications: Publication,
   teams: Team,

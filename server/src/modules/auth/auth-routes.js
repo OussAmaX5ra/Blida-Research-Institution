@@ -16,6 +16,7 @@ import {
   logoutAdminSession,
   logoutAllAdminSessions,
   refreshAdminSession,
+  updateCurrentUserProfile,
 } from "./auth-service.js";
 
 const authRouter = Router();
@@ -90,5 +91,18 @@ authRouter.get("/me", authenticateAdmin, async (request, response, next) => {
     next(error);
   }
 });
+
+authRouter.put(
+  "/settings/profile",
+  authenticateAdmin,
+  async (request, response, next) => {
+    try {
+      const result = await updateCurrentUserProfile(request, request.body);
+      response.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export { authRouter };

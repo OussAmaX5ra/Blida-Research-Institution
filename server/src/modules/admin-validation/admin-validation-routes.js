@@ -9,7 +9,7 @@ import { validateRequest } from "../../validators/request-validator.js";
 const validationRouter = Router();
 
 const entityTypeParamSchema = z.object({
-  entityType: z.enum(["gallery", "member", "news", "project", "publication", "team"]),
+  entityType: z.enum(["gallery", "member", "news", "phd_progress", "project", "publication", "team"]),
 });
 
 function formatSchemaIssues(issues) {

@@ -126,21 +126,21 @@ Ship the mandatory differentiators that elevate the platform beyond a basic acad
 
 ### Tasks
 
-- `[ ]` Define the publication citation metadata requirements
-- `[ ]` Implement BibTeX citation generation
-- `[ ]` Implement APA citation generation
-- `[ ]` Add citation export actions to publication cards and/or publication details
-- `[ ]` Validate citation output against real publication examples
-- `[ ]` Define the `phd_progress` schema and milestone model
-- `[ ]` Build the admin CRUD workflow for PhD progress tracking
-- `[ ]` Build the public-facing PhD progress timeline UI
-- `[ ]` Link PhD progress records to related members and projects
-- `[ ]` Support configurable visibility for progress records if needed
-- `[ ]` Ensure the PhD progress tracker is readable on mobile and desktop
+- `[x]` Define the publication citation metadata requirements
+- `[x]` Implement BibTeX citation generation
+- `[x]` Implement APA citation generation
+- `[x]` Add citation export actions to publication cards and/or publication details
+- `[x]` Validate citation output against real publication examples
+- `[x]` Define the `phd_progress` schema and milestone model
+- `[x]` Build the admin CRUD workflow for PhD progress tracking
+- `[x]` Build the public-facing PhD progress timeline UI
+- `[x]` Link PhD progress records to related members and projects
+- `[x]` Support configurable visibility for progress records if needed
+- `[x]` Ensure the PhD progress tracker is readable on mobile and desktop
 
 ### Milestone Status
 
-- `[ ]` Milestone 4 complete
+- `[x]` Milestone 4 complete
 
 ## Milestone 5: Production Hardening
 

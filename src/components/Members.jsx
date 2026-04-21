@@ -44,23 +44,20 @@ const MemberCard = memo(function MemberCard({ member, teamColorMap }) {
 
 export default function Members() {
   const { collections } = usePublicData();
-  const allMembers = collections?.members ?? [];
-  const teams = collections?.teams ?? [];
 
   const teamColorMap = useMemo(
-    () => new Map(teams.map(t => [t.acronym, t.color])),
-    [teams],
+    () => new Map((collections?.teams ?? []).map(t => [t.acronym, t.color])),
+    [collections?.teams],
   );
 
-  // Filter to show only faculty (Professors and Doctors) on the homepage section
   const professors = useMemo(
-    () => allMembers.filter(m => m.role === 'Professor'),
-    [allMembers],
+    () => (collections?.members ?? []).filter(m => m.role === 'Professor'),
+    [collections?.members],
   );
 
   const researchers = useMemo(
-    () => allMembers.filter(m => m.role === 'Doctor'),
-    [allMembers],
+    () => (collections?.members ?? []).filter(m => m.role === 'Doctor'),
+    [collections?.members],
   );
 
   return (

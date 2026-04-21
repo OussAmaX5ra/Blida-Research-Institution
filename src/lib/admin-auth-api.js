@@ -81,3 +81,13 @@ export async function logoutAdmin() {
     credentials: 'same-origin',
   });
 }
+
+export async function updateCurrentUserProfile(signal, values) {
+  const payload = await requestJson('/api/admin/auth/settings/profile', {
+    method: 'PUT',
+    signal,
+    body: JSON.stringify(values),
+  });
+
+  return payload?.user ?? null;
+}

@@ -1,4 +1,3 @@
-/* globals process */
 import { connectToDatabase, disconnectFromDatabase } from "../db/mongoose.js";
 import { GalleryItem } from "../models/gallery-item.js";
 import { Member } from "../models/member.js";

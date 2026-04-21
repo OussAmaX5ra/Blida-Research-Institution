@@ -31,5 +31,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.18.0",
     "zod": "^3.25.76"
-  }
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

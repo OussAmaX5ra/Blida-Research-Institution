@@ -7,6 +7,7 @@ import { RBAC_PERMISSIONS } from "../../utils/rbac.js";
 import { validateRequest } from "../../validators/request-validator.js";
 import {
   createAdminContent,
+  createAdminUser,
   deleteAdminContent,
   listAdminContent,
   listAdminUsers,
@@ -18,7 +19,7 @@ import {
 const adminContentRouter = Router();
 
 const entityTypeParamSchema = z.object({
-  entityType: z.enum(["gallery", "member", "news", "project", "publication", "team"]),
+  entityType: z.enum(["gallery", "member", "news", "phd_progress", "project", "publication", "team"]),
 });
 
 const objectIdParamSchema = z.object({
@@ -43,6 +44,12 @@ const entityPermissions = {
     delete: RBAC_PERMISSIONS.NEWS_DELETE,
     read: RBAC_PERMISSIONS.NEWS_READ,
     update: RBAC_PERMISSIONS.NEWS_UPDATE,
+  },
+  phd_progress: {
+    create: RBAC_PERMISSIONS.PHD_PROGRESS_CREATE,
+    delete: RBAC_PERMISSIONS.PHD_PROGRESS_DELETE,
+    read: RBAC_PERMISSIONS.PHD_PROGRESS_READ,
+    update: RBAC_PERMISSIONS.PHD_PROGRESS_UPDATE,
   },
   project: {
     create: RBAC_PERMISSIONS.PROJECTS_CREATE,
@@ -85,6 +92,27 @@ adminContentRouter.get(
   async (request, response, next) => {
     try {
       response.status(200).json(await listAdminUsers(request.user.id));
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+const createUserBodySchema = z.object({
+  email: z.string().email(),
+  fullName: z.string().min(1),
+  role: z.enum(["content_admin", "editor"]),
+});
+
+adminContentRouter.post(
+  "/users",
+  authenticateAdmin,
+  validateRequest({ body: createUserBodySchema }),
+  requirePermissions(RBAC_PERMISSIONS.USERS_CREATE),
+  async (request, response, next) => {
+    try {
+      const result = await createAdminUser(request.body, request.user.id);
+      response.status(201).json(result);
     } catch (error) {
       next(error);
     }

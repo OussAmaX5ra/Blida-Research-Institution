@@ -95,6 +95,7 @@ function AdminGalleryErrorState({ error, onRetry }) {
 }
 
 function GalleryToolbar({
+  canCreateGallery,
   categoryOptions,
   isRefreshing,
   onNavigate,

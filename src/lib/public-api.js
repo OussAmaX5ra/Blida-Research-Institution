@@ -6,6 +6,7 @@ const publicEndpoints = {
   publications: '/api/publications',
   news: '/api/news',
   gallery: '/api/gallery',
+  phdProgress: '/api/phd-progress',
 };
 
 export const PUBLIC_DATA_INVALIDATED_EVENT = 'research-lab:public-data-invalidated';

@@ -1,4 +1,3 @@
-/* globals process */
 import dns from "node:dns";
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
@@ -24,6 +23,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   PASSWORD_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   AUTH_COOKIE_DOMAIN: optionalStringSchema,
+  API_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

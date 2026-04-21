@@ -144,12 +144,10 @@ function PublicationCard({ pub, onCite }) {
 
 export default function Publications() {
   const { collections } = usePublicData();
-  const publications = collections?.publications ?? [];
-  const teams = collections?.teams ?? [];
 
   const allTags = useMemo(
-    () => ['All', ...teams.map(t => t.acronym)],
-    [teams],
+    () => ['All', ...(collections?.teams ?? []).map(t => t.acronym)],
+    [collections?.teams],
   );
 
   const [query, setQuery] = useState('');
@@ -157,19 +155,19 @@ export default function Publications() {
   const [citingPub, setCitingPub] = useState(null);
   const [, startTransition] = useTransition();
 
-  // Debounce search via useTransition for non-urgent updates
   const handleSearch = useCallback(e => {
     startTransition(() => setQuery(e.target.value));
   }, []);
 
   const filtered = useMemo(() => {
+    const publications = collections?.publications ?? [];
     const q = query.toLowerCase();
     return publications.filter(p => {
       const matchTag = activeTag === 'All' || p.teamTag === activeTag;
       const matchQuery = !q || p.title.toLowerCase().includes(q) || (p.authors ?? []).some(a => a.toLowerCase().includes(q)) || p.journal.toLowerCase().includes(q);
       return matchTag && matchQuery;
     });
-  }, [query, activeTag, publications]);
+  }, [query, activeTag, collections?.publications]);
 
   return (
     <section id="publications" className="py-24 px-6" style={{ background: 'var(--color-surface-alt)' }}>
@@ -184,7 +182,7 @@ export default function Publications() {
               Publications
             </h2>
             <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-              {filtered.length} of {publications.length} papers
+              {filtered.length} of {collections?.publications?.length ?? 0} papers
             </p>
           </div>
           <div className="h-px" style={{ background: 'linear-gradient(to right, var(--color-gold), transparent)' }} />

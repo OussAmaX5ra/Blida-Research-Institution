@@ -65,6 +65,13 @@ const publicPageHierarchy = [
     ],
   },
   {
+    id: 'phd-progress',
+    label: 'PhD Progress',
+    path: '/phd-progress',
+    pageType: 'listing',
+    navGroup: 'primary',
+  },
+  {
     id: 'news',
     label: 'News',
     path: '/news',

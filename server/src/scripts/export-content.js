@@ -1,6 +1,6 @@
-/* globals process */
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { connectToDatabase, disconnectFromDatabase } from "../db/mongoose.js";
 import { GalleryItem } from "../models/gallery-item.js";

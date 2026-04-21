@@ -1,9 +1,27 @@
-server/node_modules/
-server/.env
-server/.env.local
-.idea/
 node_modules/
+server/node_modules/
+dist/
+.idea/
 graphify-out/
 rebuild_graph.py
 skills/
 docs/mcp_screenshots
+skills-lock.json
+
+# Environment files
+.env
+.env.local
+.env.*
+server/.env
+server/.env.local
+server/.env.*
+
+# MongoDB
+mongosh-*/
+*.tgz
+
+# Seeding and debug scripts
+server/src/scripts/seed-*.js
+server/src/scripts/verify-*.js
+server/src/scripts/export-*.js
+server/src/scripts/create-admin-*.js

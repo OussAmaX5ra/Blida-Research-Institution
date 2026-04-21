@@ -726,5 +726,132 @@
       "teamSlug": "health-informatics",
       "title": "Privacy defaults working session"
     }
+  ],
+  "phd_progress": [
+    {
+      "slug": "ilyes-benmoussa-coursework",
+      "title": "Graduate Coursework Completion",
+      "description": "Complete required graduate coursework including advanced privacy engineering and secure computation courses.",
+      "memberSlug": "ilyes-benmoussa",
+      "projectSlug": "cohort-analytics-pipeline",
+      "teamSlug": "health-informatics",
+      "milestoneType": "Coursework",
+      "status": "Completed",
+      "visibility": "Public",
+      "dueDate": "2025-09-15",
+      "completedAt": "2025-09-10"
+    },
+    {
+      "slug": "ilyes-benmoussa-qualifying",
+      "title": "Qualifying Examination",
+      "description": "Pass the qualifying examination covering privacy engineering and differential privacy theory.",
+      "memberSlug": "ilyes-benmoussa",
+      "projectSlug": "cohort-analytics-pipeline",
+      "teamSlug": "health-informatics",
+      "milestoneType": "Qualifying",
+      "status": "Completed",
+      "visibility": "Public",
+      "dueDate": "2025-12-15",
+      "completedAt": "2025-12-20"
+    },
+    {
+      "slug": "ilyes-benmoussa-proposal",
+      "title": "Dissertation Proposal Defense",
+      "description": "Present and defend the dissertation proposal on privacy-preserving cohort analytics.",
+      "memberSlug": "ilyes-benmoussa",
+      "projectSlug": "cohort-analytics-pipeline",
+      "teamSlug": "health-informatics",
+      "milestoneType": "Proposal",
+      "status": "In Progress",
+      "visibility": "Public",
+      "dueDate": "2026-06-30"
+    },
+    {
+      "slug": "hana-amrani-coursework",
+      "title": "Graduate Coursework Completion",
+      "description": "Complete required graduate coursework including real-time systems and WCET analysis.",
+      "memberSlug": "hana-amrani",
+      "projectSlug": "telemetry-integrity-harness",
+      "teamSlug": "digital-systems-lab",
+      "milestoneType": "Coursework",
+      "status": "Completed",
+      "visibility": "Public",
+      "dueDate": "2025-09-15",
+      "completedAt": "2025-09-05"
+    },
+    {
+      "slug": "hana-amrani-qualifying",
+      "title": "Qualifying Examination",
+      "description": "Pass the qualifying examination covering embedded systems and WCET analysis.",
+      "memberSlug": "hana-amrani",
+      "projectSlug": "telemetry-integrity-harness",
+      "teamSlug": "digital-systems-lab",
+      "milestoneType": "Qualifying",
+      "status": "In Progress",
+      "visibility": "Public",
+      "dueDate": "2026-03-15"
+    },
+    {
+      "slug": "hana-amrani-proposal",
+      "title": "Dissertation Proposal Defense",
+      "description": "Present and defend the dissertation proposal on WCET analysis for telemetry systems.",
+      "memberSlug": "hana-amrani",
+      "projectSlug": "telemetry-integrity-harness",
+      "teamSlug": "digital-systems-lab",
+      "milestoneType": "Proposal",
+      "status": "Pending",
+      "visibility": "Public",
+      "dueDate": "2026-09-30"
+    },
+    {
+      "slug": "meriem-benchikh-coursework",
+      "title": "Graduate Coursework Completion",
+      "description": "Complete required graduate coursework including electrochemical testing and materials science.",
+      "memberSlug": "meriem-benchikh",
+      "projectSlug": "wear-resistant-coating-pilot",
+      "teamSlug": "biomaterials-interfaces",
+      "milestoneType": "Coursework",
+      "status": "Completed",
+      "visibility": "Public",
+      "dueDate": "2025-09-15",
+      "completedAt": "2025-09-12"
+    },
+    {
+      "slug": "meriem-benchikh-qualifying",
+      "title": "Qualifying Examination",
+      "description": "Pass the qualifying examination covering surface science and tribology.",
+      "memberSlug": "meriem-benchikh",
+      "projectSlug": "wear-resistant-coating-pilot",
+      "teamSlug": "biomaterials-interfaces",
+      "milestoneType": "Qualifying",
+      "status": "Completed",
+      "visibility": "Public",
+      "dueDate": "2026-01-15",
+      "completedAt": "2026-01-18"
+    },
+    {
+      "slug": "meriem-benchikh-comprehensive",
+      "title": "Comprehensive Examination",
+      "description": "Pass the comprehensive examination covering corrosion mechanisms and electrochemical testing.",
+      "memberSlug": "meriem-benchikh",
+      "projectSlug": "wear-resistant-coating-pilot",
+      "teamSlug": "biomaterials-interfaces",
+      "milestoneType": "Comprehensive",
+      "status": "In Progress",
+      "visibility": "Public",
+      "dueDate": "2026-05-30"
+    },
+    {
+      "slug": "meriem-benchikh-proposal",
+      "title": "Dissertation Proposal Defense",
+      "description": "Present and defend the dissertation proposal on corrosion-resistant coatings.",
+      "memberSlug": "meriem-benchikh",
+      "projectSlug": "wear-resistant-coating-pilot",
+      "teamSlug": "biomaterials-interfaces",
+      "milestoneType": "Proposal",
+      "status": "Pending",
+      "visibility": "Public",
+      "dueDate": "2026-11-30"
+    }
   ]
 }

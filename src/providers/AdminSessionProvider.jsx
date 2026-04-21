@@ -98,6 +98,8 @@ function AdminSessionProvider({ children }) {
     };
   }, []);
 
+  const hasInitialSessionChecked = useRef(false);
+
   useEffect(() => {
     if (!shouldResolveSession) {
       clearCurrentAdminActivityActor();
@@ -116,13 +118,20 @@ function AdminSessionProvider({ children }) {
       return undefined;
     }
 
+    if (hasInitialSessionChecked.current && state.user) {
+      return undefined;
+    }
+
+    hasInitialSessionChecked.current = true;
+
     const abortController = new AbortController();
     refreshSession(abortController.signal);
 
     return () => {
       abortController.abort();
     };
-  }, [pathname, shouldResolveSession, state.user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, shouldResolveSession]);
 
   return (
     <AdminSessionContext.Provider
@@ -178,6 +187,7 @@ function AdminSessionProvider({ children }) {
         },
         async retry() {
           hasFailedSessionProbeRef.current = false;
+          hasInitialSessionChecked.current = true;
           const abortController = new AbortController();
           try {
             const user = await loadCurrentAdmin(abortController.signal, { attemptRefresh: shouldResolveSession });

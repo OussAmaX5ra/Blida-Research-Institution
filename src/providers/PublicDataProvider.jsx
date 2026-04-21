@@ -12,6 +12,7 @@ const emptyCollections = {
   publications: [],
   news: [],
   gallery: [],
+  phdProgress: [],
 };
 
 const emptySiteContext = {
@@ -28,6 +29,7 @@ const emptyMeta = {
   publications: {},
   news: {},
   gallery: {},
+  phdProgress: {},
 };
 
 function PublicDataProvider({ children }) {
@@ -72,6 +74,7 @@ function PublicDataProvider({ children }) {
             publications: payload.publications.data,
             news: payload.news.data,
             gallery: payload.gallery.data,
+            phdProgress: payload.phdProgress.data,
           },
           meta: {
             siteContext: payload.siteContext.meta,
@@ -81,6 +84,7 @@ function PublicDataProvider({ children }) {
             publications: payload.publications.meta,
             news: payload.news.meta,
             gallery: payload.gallery.meta,
+            phdProgress: payload.phdProgress.meta,
           },
           siteContext: payload.siteContext.data ?? emptySiteContext,
           status: hasSuccessfulCollection ? 'ready' : 'error',

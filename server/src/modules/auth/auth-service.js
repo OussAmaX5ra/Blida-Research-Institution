@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { z } from "zod";
 
 import { AuthSession } from "../../models/auth-session.js";
 import { ADMIN_USER_ROLES, User } from "../../models/user.js";
@@ -15,6 +16,7 @@ import {
   resolveAuthenticatedAdminFromRefreshCookie,
   revokeAllSessionsForUser,
 } from "../../utils/refresh-session.js";
+import { createValidationError, formatSchemaIssues, buildDuplicateFieldError } from "../../validators/admin-content-schemas.js";
 
 const ACTIVE_ADMIN_ROLES = new Set(ADMIN_USER_ROLES);
 
@@ -145,4 +147,73 @@ export async function getCurrentAdmin(request) {
     statusCode: 401,
     code: "UNAUTHORIZED",
   });
+}
+
+const PROFILE_UPDATE_COOLDOWN_DAYS = 7;
+
+export async function updateCurrentUserProfile(request, values) {
+  const schema = z.object({
+    email: z.string().email("Enter a valid email address.").trim().toLowerCase(),
+    fullName: z.string().min(1, "Full name is required.").trim(),
+  });
+  const parsed = schema.safeParse(values);
+
+  if (!parsed.success) {
+    throw createValidationError(formatSchemaIssues(parsed.error.issues));
+  }
+
+  const { email, fullName } = parsed.data;
+  const userId = request.user?.id;
+
+  if (!userId) {
+    throw new AppError("Authentication is required.", {
+      statusCode: 401,
+      code: "UNAUTHORIZED",
+    });
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError("User not found.", {
+      statusCode: 404,
+      code: "NOT_FOUND",
+    });
+  }
+
+  if (user.lastProfileUpdate) {
+    const daysSinceUpdate = Math.floor(
+      (Date.now() - new Date(user.lastProfileUpdate).getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (daysSinceUpdate < PROFILE_UPDATE_COOLDOWN_DAYS) {
+      const nextUpdateDate = new Date(user.lastProfileUpdate);
+      nextUpdateDate.setDate(nextUpdateDate.getDate() + PROFILE_UPDATE_COOLDOWN_DAYS);
+
+      throw new AppError(
+        `Profile updates are allowed once per week. Next update available on ${nextUpdateDate.toLocaleDateString()}.`,
+        {
+          statusCode: 429,
+          code: "PROFILE_UPDATE_COOLDOWN",
+          nextUpdateDate: nextUpdateDate.toISOString(),
+        },
+      );
+    }
+  }
+
+  if (email !== user.email) {
+    const existingEmail = await User.findOne({ email, _id: { $ne: user._id } }).select({ _id: 1 }).lean();
+    if (existingEmail) {
+      throw buildDuplicateFieldError("email", "An account with this email already exists.");
+    }
+  }
+
+  user.email = email;
+  user.fullName = fullName;
+  user.lastProfileUpdate = new Date();
+  await user.save();
+
+  return {
+    user: serializeAuthenticatedUser(user),
+  };
 }

@@ -2,11 +2,13 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import {
   KeyRound,
   Layers3,
+  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
   UserCog,
   UserRoundCheck,
+  UserPlus,
   Users2,
 } from 'lucide-react';
 
@@ -17,6 +19,7 @@ import {
   useAdminUserDrafts,
 } from '../../lib/admin-user-drafts.js';
 import { useAdminSession } from '../../providers/useAdminSession.js';
+import { UserCreateDialog } from '../../components/admin/UserCreateDialog.jsx';
 
 const roleOrder = ADMIN_USER_ROLE_OPTIONS;
 const statusOrder = ADMIN_USER_STATUS_OPTIONS;
@@ -238,6 +241,7 @@ function AccessWorkflowDialog({
 
 function UsersToolbar({
   isRefreshing,
+  onAddUser,
   onRefresh,
   pendingResetCount,
   searchValue,
@@ -255,7 +259,16 @@ function UsersToolbar({
   return (
     <>
       <article className="admin-editorial-card admin-editorial-card-wide">
-        <p className="admin-section-kicker">Access Control</p>
+        <div className="admin-panel-heading">
+          <ShieldCheck size={16} />
+          Access Control
+          {onAddUser ? (
+            <button type="button" className="admin-secondary-button admin-panel-action" onClick={onAddUser}>
+              <Plus size={15} />
+              Add user
+            </button>
+          ) : null}
+        </div>
         <h3>The protected user registry now has a real interface for reviewing who can enter the admin workspace.</h3>
         <p className="admin-body-copy">
           This milestone now covers visibility and action: account roles, sign-in posture, and
@@ -414,7 +427,22 @@ export default function AdminUsersPage() {
   const [draftRole, setDraftRole] = useState(roleOrder[0]);
   const [draftStatus, setDraftStatus] = useState(statusOrder[0]);
   const [issuedTemporaryPassword, setIssuedTemporaryPassword] = useState('');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const deferredSearchValue = useDeferredValue(searchValue);
+
+  const isSuperAdmin = user?.role === 'super_admin';
+
+  function openCreateDialog() {
+    setIsCreateDialogOpen(true);
+  }
+
+  function closeCreateDialog() {
+    setIsCreateDialogOpen(false);
+  }
+
+  function handleUserCreated() {
+    retry();
+  }
 
   const activeAccount = useMemo(
     () => accounts.find((account) => account.id === activeAccountId) ?? null,
@@ -596,6 +624,7 @@ export default function AdminUsersPage() {
       <section className="admin-teams-grid">
         <UsersToolbar
           isRefreshing={isPending}
+          onAddUser={isSuperAdmin ? openCreateDialog : undefined}
           onRefresh={retry}
           pendingResetCount={pendingResetCount}
           searchValue={searchValue}
@@ -725,6 +754,12 @@ export default function AdminUsersPage() {
         onRoleChange={setDraftRole}
         onSave={handleSaveAccess}
         onStatusChange={setDraftStatus}
+      />
+
+      <UserCreateDialog
+        isOpen={isCreateDialogOpen}
+        onClose={closeCreateDialog}
+        onSuccess={handleUserCreated}
       />
     </>
   );

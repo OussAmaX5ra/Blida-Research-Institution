@@ -118,7 +118,8 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
     isLoading,
     siteContext,
   } = usePublicData();
-  const researchAxes = siteContext.researchAxes ?? [];
+
+  const researchAxes = useMemo(() => siteContext.researchAxes ?? [], [siteContext]);
   const { createTeam, deleteTeam, findTeamBySlug, isReady, teams, updateTeam } = useAdminTeamDrafts(sourceTeams, researchAxes);
   const { canDelete } = useAdminAbilities();
   const existingTeam = mode === 'edit' ? findTeamBySlug(teamSlug) : null;
@@ -160,7 +161,7 @@ export default function AdminTeamFormPage({ mode, onNavigate, teamSlug = '' }) {
 
   const matchedAxis = useMemo(
     () => researchAxes.find((axis) => axis.id === values.axisId) ?? null,
-    [values.axisId],
+    [values.axisId, researchAxes],
   );
 
   if ((!hasLoaded && isLoading) || !isReady) {

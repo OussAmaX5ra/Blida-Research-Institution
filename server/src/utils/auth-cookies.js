@@ -8,7 +8,7 @@ function getSharedCookieOptions() {
   return {
     domain: env.AUTH_COOKIE_DOMAIN,
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: env.AUTH_COOKIE_SAME_SITE,
     secure: env.NODE_ENV === "production",
   };
 }

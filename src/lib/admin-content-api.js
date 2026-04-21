@@ -1,8 +1,9 @@
+import { buildApiUrl } from './api-url.js';
 import { notifyPublicDataInvalidated } from './public-api.js';
 
 async function requestJson(path, options = {}) {
   const response = await fetch(path, {
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -44,7 +45,7 @@ function mapValidationError(error) {
 }
 
 export async function fetchAdminContentCollection(entityType, signal) {
-  const payload = await requestJson(`/api/admin/content/${entityType}`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/${entityType}`), {
     method: 'GET',
     signal,
   });
@@ -53,7 +54,7 @@ export async function fetchAdminContentCollection(entityType, signal) {
 }
 
 export async function createAdminContentItem(entityType, values) {
-  const payload = await requestJson(`/api/admin/content/${entityType}`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/${entityType}`), {
     method: 'POST',
     body: JSON.stringify(values),
   });
@@ -63,7 +64,7 @@ export async function createAdminContentItem(entityType, values) {
 }
 
 export async function updateAdminContentItem(entityType, id, values) {
-  const payload = await requestJson(`/api/admin/content/${entityType}/${id}`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/${entityType}/${id}`), {
     method: 'PUT',
     body: JSON.stringify(values),
   });
@@ -73,7 +74,7 @@ export async function updateAdminContentItem(entityType, id, values) {
 }
 
 export async function deleteAdminContentItem(entityType, id) {
-  const payload = await requestJson(`/api/admin/content/${entityType}/${id}`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/${entityType}/${id}`), {
     method: 'DELETE',
   });
 
@@ -82,7 +83,7 @@ export async function deleteAdminContentItem(entityType, id) {
 }
 
 export async function fetchAdminUsers(signal) {
-  const payload = await requestJson('/api/admin/content/users', {
+  const payload = await requestJson(buildApiUrl('/api/admin/content/users'), {
     method: 'GET',
     signal,
   });
@@ -91,7 +92,7 @@ export async function fetchAdminUsers(signal) {
 }
 
 export async function updateAdminUserAccess(accountId, values) {
-  const payload = await requestJson(`/api/admin/content/users/${accountId}/access`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/users/${accountId}/access`), {
     method: 'PATCH',
     body: JSON.stringify(values),
   });
@@ -100,7 +101,7 @@ export async function updateAdminUserAccess(accountId, values) {
 }
 
 export async function issueAdminUserPasswordReset(accountId) {
-  const payload = await requestJson(`/api/admin/content/users/${accountId}/password-reset`, {
+  const payload = await requestJson(buildApiUrl(`/api/admin/content/users/${accountId}/password-reset`), {
     method: 'POST',
   });
 

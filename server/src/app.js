@@ -22,6 +22,21 @@ import { adminContentRouter } from "./modules/admin-content/admin-content-routes
 import { validationRouter } from "./modules/admin-validation/admin-validation-routes.js";
 import { publicRouter } from "./modules/public/public-routes.js";
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function matchesClientOrigin(origin) {
+  return env.CLIENT_ORIGINS.some((allowedOrigin) => {
+    if (!allowedOrigin.includes("*")) {
+      return allowedOrigin === origin;
+    }
+
+    const pattern = new RegExp(`^${allowedOrigin.split("*").map(escapeRegex).join(".*")}$`);
+    return pattern.test(origin);
+  });
+}
+
 export function createApp() {
   const app = express();
 
@@ -31,7 +46,14 @@ export function createApp() {
   app.use(securityHeadersMiddleware);
   app.use(
     cors({
-      origin: env.CLIENT_ORIGIN,
+      origin(origin, callback) {
+        if (!origin || matchesClientOrigin(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(null, false);
+      },
       credentials: true,
     }),
   );
@@ -64,4 +86,3 @@ export function createApp() {
 
   return app;
 }
-

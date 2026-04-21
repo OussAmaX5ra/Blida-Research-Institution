@@ -1,12 +1,14 @@
+import { buildApiUrl } from './api-url.js';
+
 const publicEndpoints = {
-  siteContext: '/api/site-context',
-  teams: '/api/teams',
-  members: '/api/members',
-  projects: '/api/projects',
-  publications: '/api/publications',
-  news: '/api/news',
-  gallery: '/api/gallery',
-  phdProgress: '/api/phd-progress',
+  siteContext: buildApiUrl('/api/site-context'),
+  teams: buildApiUrl('/api/teams'),
+  members: buildApiUrl('/api/members'),
+  projects: buildApiUrl('/api/projects'),
+  publications: buildApiUrl('/api/publications'),
+  news: buildApiUrl('/api/news'),
+  gallery: buildApiUrl('/api/gallery'),
+  phdProgress: buildApiUrl('/api/phd-progress'),
 };
 
 export const PUBLIC_DATA_INVALIDATED_EVENT = 'research-lab:public-data-invalidated';
@@ -21,7 +23,7 @@ export function notifyPublicDataInvalidated() {
 
 async function requestJson(path, signal) {
   const response = await fetch(path, {
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
     },

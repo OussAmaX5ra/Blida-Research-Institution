@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyRound, Plus, UserPlus } from 'lucide-react';
 
+import { buildApiUrl } from '../../lib/api-url.js';
 import { queueAdminToast } from '../../lib/admin-toast.js';
 
 const roleOptions = [
@@ -47,7 +48,8 @@ export function UserCreateDialog({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/admin/content/users', {
+      const response = await fetch(buildApiUrl('/api/admin/content/users'), {
+        credentials: 'include',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

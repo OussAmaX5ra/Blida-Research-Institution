@@ -1,108 +1,127 @@
-# Blida Research Institute - Docker Deployment
+# Vercel Deployment
 
-## Prerequisites
+This repository is now set up for a two-project Vercel deployment:
 
-- Docker
-- Docker Compose
-- MongoDB Atlas account (already configured)
+- Frontend project: deploy the repository root
+- Backend project: deploy the `server/` directory
 
-## Quick Start
+## What was added
 
-1. **Edit production environment variables:**
+- `vercel.json` at the repo root for Vite SPA deep-link rewrites
+- `server/src/index.js` so the Express API can run on Vercel Functions
+- frontend API helpers that support a separate backend URL through `VITE_API_BASE_URL`
+- backend CORS support for one or more frontend origins, including wildcard preview patterns
 
-Edit `.env.production` with your production values before starting the container.
+## 1. Deploy the backend
 
-2. **Build and start the container:**
+Create a new Vercel project from this repository and set:
+
+- Root Directory: `server`
+- Framework Preset: `Other`
+
+Add these environment variables in the backend project:
 
 ```bash
-docker-compose up --build
-```
-
-3. **Access the application:**
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:3000/api`
-
-## Environment Variables
-
-Create a `.env.production` file with:
-
-```
 NODE_ENV=production
 PORT=4000
-CLIENT_ORIGIN=http://localhost:3000
-MONGODB_URI=your-mongodb-atlas-uri
-ACCESS_TOKEN_SECRET=your-32-char-minimum-secret
-REFRESH_TOKEN_SECRET=your-32-char-minimum-secret
+CLIENT_ORIGIN=https://your-frontend.vercel.app
+CLIENT_ORIGINS=https://your-frontend.vercel.app,https://your-frontend-git-*.vercel.app
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@CLUSTER/DATABASE?retryWrites=true&w=majority
 LOG_LEVEL=info
+ACCESS_TOKEN_SECRET=replace-with-a-long-random-secret-at-least-32-characters
+REFRESH_TOKEN_SECRET=replace-with-a-different-long-random-secret-at-least-32-characters
+ACCESS_TOKEN_TTL_MINUTES=15
+REFRESH_TOKEN_TTL_DAYS=7
+PASSWORD_SALT_ROUNDS=12
+AUTH_COOKIE_DOMAIN=
+AUTH_COOKIE_SAME_SITE=strict
+API_RATE_LIMIT_MAX=800
 ```
 
-## Commands
+Notes:
+
+- `CLIENT_ORIGIN` is the main frontend URL.
+- `CLIENT_ORIGINS` is optional and can include extra exact URLs or wildcard preview URLs.
+- For preview deployments on Vercel, a pattern like `https://your-frontend-git-*.vercel.app` is the easiest option.
+- If you use two different custom domains for frontend and backend, set `AUTH_COOKIE_SAME_SITE=none`.
+
+After deploy, note the backend URL, for example:
 
 ```bash
-# Build and start
-docker-compose up --build
-
-# Start in detached mode
-docker-compose up -d
-
-# Stop
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
-# Rebuild
-docker-compose build --no-cache
+https://your-backend.vercel.app
 ```
 
-## Production Deployment on VPS
+Health check:
 
-1. **Upload files to your server:**
 ```bash
-scp -r . user@your-server:/opt/blida-research
+https://your-backend.vercel.app/api/health
 ```
 
-2. **SSH into server and configure:**
+## 2. Deploy the frontend
+
+Create a second Vercel project from the same repository and set:
+
+- Root Directory: `.`
+- Framework Preset: `Vite`
+
+Add this environment variable in the frontend project:
+
 ```bash
-ssh user@your-server
-cd /opt/blida-research
-nano .env.production
+VITE_API_BASE_URL=https://your-backend.vercel.app
 ```
 
-3. **Run with Docker Compose:**
+Then deploy.
+
+The frontend is configured to:
+
+- use the backend URL above for all API requests
+- send cookies with cross-origin admin requests
+- rewrite deep links to `index.html` so routes like `/about` and `/admin/login` work on refresh
+
+## 3. Custom domains
+
+If you later attach custom domains:
+
+- update `VITE_API_BASE_URL` in the frontend project
+- update `CLIENT_ORIGIN` and `CLIENT_ORIGINS` in the backend project
+- if frontend and backend are on different sites, use `AUTH_COOKIE_SAME_SITE=none`
+
+## 4. Local development
+
+Frontend:
+
 ```bash
-docker-compose up -d --build
+npm install
+npm run dev
 ```
 
-4. **Set up Nginx as reverse proxy (optional):**
-Point your domain to the Docker container port 3000.
+Backend:
 
-## Container Details
-
-- **Image**: Node.js 20 Alpine
-- **Ports**: 3000 (HTTP)
-- **Services**: Nginx (reverse proxy) + Node.js API server
-- **Persistent data**: None (uses MongoDB Atlas)
-
-## Troubleshooting
-
-### Container won't start
 ```bash
-# Check logs
-docker-compose logs
-
-# Validate nginx config inside the image
-docker-compose run --rm web nginx -p /tmp/nginx -c /etc/nginx/nginx.conf -t
+cd server
+npm install
+npm run dev
 ```
 
-### MongoDB connection error
-- Verify `MONGODB_URI` is correct in `.env.production`
-- Check MongoDB Atlas network access settings
+Optional frontend `.env.local`:
 
-### Port already in use
 ```bash
-# Check what's using port 3000
-lsof -i :3000
-
-# Change port in docker-compose.yml if needed
+VITE_API_BASE_URL=http://localhost:4000
 ```
+
+## 5. Creating the first admin user
+
+Run this locally against the same production MongoDB database:
+
+```bash
+cd server
+npm run create-admin -- --email=admin@example.com --password=StrongPass123! --fullName="Admin User"
+```
+
+Use the production backend environment values locally before running the command.
+
+## 6. Files to use as templates
+
+- Frontend env template: `.env.example`
+- Backend env template: `server/.env.example`
+- Production reference: `.env.production`

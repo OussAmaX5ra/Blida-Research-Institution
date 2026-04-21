@@ -1,6 +1,8 @@
+import { buildApiUrl } from './api-url.js';
+
 async function requestJson(path, options = {}) {
   const response = await fetch(path, {
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       ...(options.body ? { 'Content-Type': 'application/json' } : {}),
@@ -29,7 +31,7 @@ async function requestJson(path, options = {}) {
 }
 
 export async function loginAdmin({ email, password }) {
-  const payload = await requestJson('/api/admin/auth/login', {
+  const payload = await requestJson(buildApiUrl('/api/admin/auth/login'), {
     method: 'POST',
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
@@ -41,7 +43,7 @@ export async function loginAdmin({ email, password }) {
 }
 
 export async function fetchCurrentAdmin(signal) {
-  const payload = await requestJson('/api/admin/auth/me', {
+  const payload = await requestJson(buildApiUrl('/api/admin/auth/me'), {
     method: 'GET',
     signal,
   });
@@ -50,7 +52,7 @@ export async function fetchCurrentAdmin(signal) {
 }
 
 export async function refreshAdminSession(signal) {
-  const payload = await requestJson('/api/admin/auth/refresh', {
+  const payload = await requestJson(buildApiUrl('/api/admin/auth/refresh'), {
     method: 'POST',
     signal,
   });
@@ -76,14 +78,14 @@ export async function loadCurrentAdmin(signal, { attemptRefresh = true } = {}) {
 }
 
 export async function logoutAdmin() {
-  await fetch('/api/admin/auth/logout', {
+  await fetch(buildApiUrl('/api/admin/auth/logout'), {
     method: 'POST',
-    credentials: 'same-origin',
+    credentials: 'include',
   });
 }
 
 export async function updateCurrentUserProfile(signal, values) {
-  const payload = await requestJson('/api/admin/auth/settings/profile', {
+  const payload = await requestJson(buildApiUrl('/api/admin/auth/settings/profile'), {
     method: 'PUT',
     signal,
     body: JSON.stringify(values),

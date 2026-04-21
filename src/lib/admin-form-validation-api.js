@@ -1,3 +1,5 @@
+import { buildApiUrl } from './api-url.js';
+
 function mapValidationDetailsToFieldErrors(details) {
   if (!Array.isArray(details)) {
     return {};
@@ -19,9 +21,9 @@ function mapValidationDetailsToFieldErrors(details) {
 }
 
 export async function validateAdminFormOnServer(entityType, values) {
-  const response = await fetch(`/api/admin/validation/${entityType}`, {
+  const response = await fetch(buildApiUrl(`/api/admin/validation/${entityType}`), {
     body: JSON.stringify(values),
-    credentials: 'same-origin',
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',

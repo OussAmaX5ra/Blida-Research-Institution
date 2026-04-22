@@ -16,8 +16,26 @@ const emptyCollections = {
 };
 
 const emptySiteContext = {
-  contactInfo: null,
-  labInfo: null,
+  contactInfo: {
+    campus: '',
+    city: '',
+    directions: [],
+    email: '',
+    office: '',
+    officeHours: [],
+    outreachTracks: [],
+    phone: '',
+    responseWindow: '',
+  },
+  labInfo: {
+    acronym: '',
+    axes: [],
+    founded: '',
+    mission: '',
+    name: '',
+    stats: [],
+    vision: '',
+  },
   researchAxes: [],
 };
 
@@ -37,7 +55,7 @@ function PublicDataProvider({ children }) {
     collections: emptyCollections,
     meta: emptyMeta,
     siteContext: emptySiteContext,
-    status: 'idle',
+    status: 'loading',
     error: '',
   });
   const [isPending, startTransition] = useTransition();
